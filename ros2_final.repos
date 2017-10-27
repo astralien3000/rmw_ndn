@@ -1,0 +1,37 @@
+repositories:
+  ros2/common_interfaces:
+    type: git
+    url: https://github.com/ros2/common_interfaces.git
+    version: master
+  ros2/examples:
+    type: git
+    url: https://github.com/ros2/examples.git
+    version: master
+  ros2/example_interfaces:
+    type: git
+    url: https://github.com/ros2/example_interfaces.git
+    version: master
+  ros2/rcl:
+    type: git
+    url: https://github.com/ros2/rcl.git
+    version: master
+  ros2/rcl_interfaces:
+    type: git
+    url: https://github.com/ros2/rcl_interfaces.git
+    version: master
+#  ros2/rclc:
+#    type: git
+#    url: https://github.com/ros2/rclc.git
+#    version: master
+  ros2/rclcpp:
+    type: git
+    url: https://github.com/ros2/rclcpp.git
+    version: master
+  ros2/rclpy:
+    type: git
+    url: https://github.com/ros2/rclpy.git
+    version: master
+  ros2/rmw_implementation:
+    type: git
+    url: https://github.com/ros2/rmw_implementation.git
+    version: master
