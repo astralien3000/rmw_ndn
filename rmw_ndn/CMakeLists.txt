@@ -1,17 +1,3 @@
-# Copyright 2016 Proyectos y Sistemas de Mantenimiento SL (eProsima).
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 cmake_minimum_required(VERSION 3.5)
 
 project(rmw_ndn)
@@ -27,60 +13,57 @@ endif()
 
 find_package(ament_cmake_ros REQUIRED)
 
-find_package(rcutils REQUIRED)
-
 find_package(rmw REQUIRED)
-find_package(rosidl_generator_c REQUIRED)
-find_package(rosidl_typesupport_introspection_c REQUIRED)
-find_package(rosidl_typesupport_introspection_cpp REQUIRED)
+find_package(rosidl_typesupport_cbor REQUIRED)
 
-ament_export_dependencies(rcutils)
-ament_export_dependencies(rmw)
-ament_export_dependencies(rosidl_generator_c)
-ament_export_dependencies(rosidl_typesupport_introspection_c)
-ament_export_dependencies(rosidl_typesupport_introspection_cpp)
+include_directories(include)
 
 add_library(rmw_ndn
-    src/app.cpp
-    src/app.hpp
-    src/functions.c
-    src/pub.cpp
-    src/pub.hpp
-    src/rmw_guard.cpp
-    src/rmw_node.cpp
-    src/rmw_pub.cpp
-    src/rmw_sub.cpp
-    src/rmw_wait.cpp
-    src/sub.cpp
-    src/sub.hpp
-    src/timer.hpp
+  src/app.cpp
+  src/app.h
+  src/functions.c
+  src/rmw_guard.cpp
+  src/rmw_node.cpp
+  src/rmw_pub.cpp
+  src/rmw_sub.cpp
+  src/rmw_wait.cpp
 )
 
+INCLUDE (FindPkgConfig)
+pkg_check_modules (NDN_CXX libndn-cxx)
+
+include_directories(rmw_ndn ${NDN_CXX_INCLUDE_DIRS})
+link_directories(rmw_ndn ${NDN_CXX_LIBRARY_DIRS} )
+target_link_libraries(rmw_ndn ${NDN_CXX_LIBRARIES})
+
+# specific order: dependents before dependencies
 ament_target_dependencies(rmw_ndn
-  "rcutils"
-  "rosidl_typesupport_introspection_c"
-  "rosidl_typesupport_introspection_cpp"
+  "rosidl_typesupport_cbor"
   "rmw"
-  "rosidl_generator_c"
 )
 
 configure_rmw_library(rmw_ndn)
 
+# Causes the visibility macros to use dllexport rather than dllimport,
+# which is appropriate when building the dll but not consuming it.
+target_compile_definitions(${PROJECT_NAME}
+PRIVATE "RMW_NDN_BUILDING_LIBRARY")
+
+# specific order: dependents before dependencies
+ament_export_include_directories(include)
 ament_export_libraries(rmw_ndn)
-if(NOT WIN32 AND NOT ANDROID)
-  ament_export_libraries(pthread)
-endif()
+
+ament_export_dependencies(rosidl_typesupport_cbor)
+ament_export_dependencies(rmw)
 
 register_rmw_implementation(
-  "c:rosidl_typesupport_c:rosidl_typesupport_introspection_c"
-  "cpp:rosidl_typesupport_cpp:rosidl_typesupport_introspection_cpp")
+  "c:rosidl_typesupport_c:rosidl_typesupport_cbor"
+  "cpp:rosidl_typesupport_cpp:rosidl_typesupport_cbor")
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()
-
-ament_package()
 
 install(
   TARGETS rmw_ndn

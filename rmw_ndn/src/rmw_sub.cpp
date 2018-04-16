@@ -1,20 +1,13 @@
 #include "rmw/rmw.h"
 
-//#include "rosidl_typesupport_test/message_introspection.h"
+#include "rosidl_typesupport_cbor/message_introspection.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "sub.hpp"
+#include "app.h"
 
-/*
-#define ENABLE_DEBUG 0
-#include <debug.h>
-*/
-#include <stdio.h>
 #define DEBUG(...) printf(__VA_ARGS__)
-
-using Sub = rmw::ndn::Subscription;
 
 rmw_subscription_t *
 rmw_create_subscription(
@@ -29,14 +22,14 @@ rmw_create_subscription(
   (void) qos_policies;
   (void) ignore_local_publications;
   DEBUG("rmw_create_subscription" "\n");
-  //rosidl_typesupport_test__MessageMembers* tsdata = (rosidl_typesupport_test__MessageMembers*)type_support->data;
+  rosidl_typesupport_cbor__MessageMembers* tsdata = (rosidl_typesupport_cbor__MessageMembers*)type_support->data;
 
   rmw_subscription_t * ret = (rmw_subscription_t *)malloc(sizeof(rmw_subscription_t));
   ret->implementation_identifier = rmw_get_implementation_identifier();
   ret->topic_name = topic_name;
 
-  //Sub* sub = new Sub(topic_name, tsdata->deserialize_);
-  //ret->data = (void*)sub;
+  sub_t* sub = NULL;//_sub_create(topic_name, tsdata->deserialize_);
+  ret->data = (void*)sub;
 
   return ret;
 }
@@ -46,10 +39,8 @@ rmw_destroy_subscription(rmw_node_t * node, rmw_subscription_t * subscription)
 {
   (void) node;
   DEBUG("rmw_destroy_subscription" "\n");
-  /*
-  delete (Sub*)subscription->data;
+  //_sub_destroy((sub_t*)subscription->data);
   free(subscription);
-  */
   return RMW_RET_OK;
 }
 
@@ -72,9 +63,9 @@ rmw_take_with_info(
 {
   (void) message_info;
   DEBUG("rmw_take_with_info" "\n");
-  /*
-  Sub* sub = (Sub*)subscription->data;
-  *taken = sub->take(ros_message);
-  */
+
+  sub_t* sub = (sub_t*)subscription->data;
+  *taken = false;//_sub_take(sub, ros_message);
+
   return RMW_RET_OK;
 }

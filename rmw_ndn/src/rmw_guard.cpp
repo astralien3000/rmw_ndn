@@ -2,11 +2,7 @@
 
 #include <stdlib.h>
 
-/*
 #define ENABLE_DEBUG 0
-#include <debug.h>
-*/
-#include <stdio.h>
 #define DEBUG(...) printf(__VA_ARGS__)
 
 const rmw_guard_condition_t *

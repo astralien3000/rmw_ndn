@@ -1,15 +1,14 @@
-#include <rmw/rmw.h>
-#include <rmw/get_topic_names_and_types.h>
-#include <rmw/get_service_names_and_types.h>
+#include "rmw/rmw.h"
+
+#include "rmw/get_topic_names_and_types.h"
+#include "rmw/get_service_names_and_types.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/*
-#include <thread.h>
-#include <random.h>
-*/
+//#include <thread.h>
+//#include <random.h>
 
 #define ENABLE_DEBUG 0
 
@@ -28,10 +27,10 @@ rmw_create_client(
   const rmw_node_t * node,
   const rosidl_service_type_support_t * type_support,
   const char * service_name,
-  const rmw_qos_profile_t * qos_policies)
-{
+  const rmw_qos_profile_t * qos_policies) {
   DPUTS("rmw_create_client");
-  return NULL;
+  static rmw_client_t ret;
+  return &ret;
 }
 
 rmw_ret_t
@@ -123,12 +122,12 @@ rmw_send_response(
   return RMW_RET_OK;
 }
 
-rmw_waitset_t *
-rmw_create_waitset(size_t max_conditions)
+rmw_wait_set_t *
+rmw_create_wait_set(size_t max_conditions)
 {
   (void) max_conditions;
   DPUTS("rmw_create_waitset");
-  rmw_waitset_t * ret = (rmw_waitset_t *)malloc(sizeof(rmw_waitset_t));
+  rmw_wait_set_t * ret = (rmw_wait_set_t *)malloc(sizeof(rmw_wait_set_t));
   ret->data = NULL;
   ret->guard_conditions = NULL;
   ret->implementation_identifier = rmw_get_implementation_identifier();
@@ -136,45 +135,11 @@ rmw_create_waitset(size_t max_conditions)
 }
 
 rmw_ret_t
-rmw_destroy_waitset(rmw_waitset_t * waitset)
+rmw_destroy_wait_set(rmw_wait_set_t * waitset)
 {
   (void) waitset;
   DPUTS("rmw_destroy_waitset");
   free(waitset);
-  return RMW_RET_OK;
-}
-
-rmw_ret_t
-rmw_get_topic_names_and_types(
-    const rmw_node_t * node,
-    rcutils_allocator_t * allocator,
-    bool no_demangle,
-    rmw_names_and_types_t * topic_names_and_types)
-{
-  (void) node;
-  (void) topic_names_and_types;
-  DPUTS("rmw_get_topic_names_and_types");
-  return RMW_RET_OK;
-}
-
-rmw_ret_t
-rmw_destroy_topic_names_and_types(
-    rmw_names_and_types_t * topic_names_and_types)
-{
-  (void) topic_names_and_types;
-  DPUTS("rmw_destroy_topic_names_and_types");
-  return RMW_RET_OK;
-}
-
-rmw_ret_t
-rmw_get_service_names_and_types(
-  const rmw_node_t * node,
-  rcutils_allocator_t * allocator,
-  rmw_names_and_types_t * service_names_and_types)
-{
-  (void) node;
-  (void) service_names_and_types;
-  DPUTS("rmw_get_service_names_and_types");
   return RMW_RET_OK;
 }
 
@@ -233,5 +198,32 @@ rmw_service_server_is_available(
   (void) client;
   (void) is_available;
   DPUTS("rmw_service_server_is_available");
+  return RMW_RET_OK;
+}
+
+rmw_ret_t
+rmw_get_node_names(
+  const rmw_node_t * node,
+  rcutils_string_array_t * node_names) {
+  DPUTS("rmw_get_node_names");
+  return RMW_RET_OK;
+}
+
+rmw_ret_t
+rmw_get_topic_names_and_types(
+  const rmw_node_t * node,
+  rcutils_allocator_t * allocator,
+  bool no_demangle,
+  rmw_names_and_types_t * topic_names_and_types) {
+  DPUTS("rmw_get_topic_names_and_types");
+  return RMW_RET_OK;
+}
+
+rmw_ret_t
+rmw_get_service_names_and_types(
+  const rmw_node_t * node,
+  rcutils_allocator_t * allocator,
+  rmw_names_and_types_t * service_names_and_types) {
+  DPUTS("rmw_get_service_names_and_types");
   return RMW_RET_OK;
 }
