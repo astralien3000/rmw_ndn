@@ -4,7 +4,10 @@
 
 #include "app.h"
 
-#define DEBUG(...) printf(__VA_ARGS__)
+#include <ndn-cxx/face.hpp>
+
+//#define DEBUG(...) printf(__VA_ARGS__)
+#define DEBUG(...)
 
 rmw_ret_t
 rmw_wait(
@@ -23,22 +26,22 @@ rmw_wait(
   (void) wait_timeout;
   DEBUG("rmw_wait" "\n");
 
-  const uint32_t begin = 0;//xtimer_now_usec();
+  const auto begin = ndn::time::getUnixEpoch();
   
-  uint32_t timeout = 0;
-  bool disable_timeout = false;
+  ndn::time::milliseconds timeout = ndn::time::milliseconds(0);
   if(wait_timeout) {
-    timeout = wait_timeout->nsec/1000 + wait_timeout->sec*1000000;
-  }
-  else {
-    disable_timeout = true;
+    timeout = ndn::time::milliseconds(wait_timeout->nsec/1000000 + wait_timeout->sec*1000);
   }
   
-  const uint32_t end = begin + timeout;
+  const auto end = begin + timeout;
 
   do {
-    app_update();
-    //thread_yield();
+    if(timeout == ndn::time::milliseconds(0)) {
+      face.processEvents(ndn::time::milliseconds(-1));
+    }
+    else {
+      face.processEvents(timeout);
+    }
 
     bool stop = false;
 
@@ -53,7 +56,7 @@ rmw_wait(
       return RMW_RET_OK;
     }
 
-  } while((/*xtimer_now_usec()*/0 < end) || disable_timeout);
+  } while((ndn::time::getUnixEpoch() < end));
 
   return RMW_RET_TIMEOUT;
 }

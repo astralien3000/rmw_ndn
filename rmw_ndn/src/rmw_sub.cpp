@@ -5,9 +5,82 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <random>
+
 #include "app.h"
 
 #define DEBUG(...) printf(__VA_ARGS__)
+
+#include <ndn-cxx/face.hpp>
+#include <ndn-cxx/interest.hpp>
+#include <ndn-cxx/data.hpp>
+
+#include <iostream>
+#include <string>
+
+class Subscriber
+{
+public:
+  explicit
+  Subscriber(const std::string& topic_name)
+    : topic_name(ndn::Name(topic_name))
+    , seq_num(0)
+  {
+    DEBUG("Subscriber::topic_name = %s\n", topic_name.c_str());
+    requestSync();
+  }
+
+private:
+  void requestSync()
+  {
+    ndn::Name name= ndn::Name(topic_name).append("sync").appendVersion();
+    DEBUG("Subscriber::requestSync %s\n", name.toUri().c_str());
+    face.expressInterest(ndn::Interest(name).setMustBeFresh(true),
+                         std::bind(&Subscriber::onSyncData, this, _2),
+                         std::bind(&Subscriber::onNack, this, _1),
+                         std::bind(&Subscriber::onTimeout, this, _1));
+  }
+
+  void requestData()
+  {
+    ndn::Name name= ndn::Name(topic_name).appendNumber(seq_num);
+    DEBUG("Subscriber::requestData %s\n", name.toUri().c_str());
+    face.expressInterest(ndn::Interest(name).setMustBeFresh(true),
+                         std::bind(&Subscriber::onData, this, _2),
+                         std::bind(&Subscriber::onNack, this, _1),
+                         std::bind(&Subscriber::onTimeout, this, _1));
+  }
+
+  void onSyncData(const ndn::Data& data)
+  {
+    DEBUG("Subscriber::onSyncData %s\n", data.getName().toUri().c_str());
+    std::cout << data << std::endl;
+    requestData();
+  }
+
+  void onData(const ndn::Data& data)
+  {
+    DEBUG("Subscriber::onData %s\n", data.getName().toUri().c_str());
+    std::cout << data << std::endl;
+    requestData();
+  }
+
+  void
+  onNack(const ndn::Interest& interest) {
+    DEBUG("Subscriber::onNack %s\n", interest.getName().toUri().c_str());
+    //requestSync();
+  }
+
+  void
+  onTimeout(const ndn::Interest& interest) {
+    DEBUG("Subscriber::onTimeout %s\n", interest.getName().toUri().c_str());
+    requestSync();
+  }
+
+private:
+  ndn::Name topic_name;
+  uint64_t seq_num;
+};
 
 rmw_subscription_t *
 rmw_create_subscription(
@@ -28,7 +101,7 @@ rmw_create_subscription(
   ret->implementation_identifier = rmw_get_implementation_identifier();
   ret->topic_name = topic_name;
 
-  sub_t* sub = NULL;//_sub_create(topic_name, tsdata->deserialize_);
+  Subscriber* sub = new Subscriber(topic_name);
   ret->data = (void*)sub;
 
   return ret;
@@ -39,7 +112,7 @@ rmw_destroy_subscription(rmw_node_t * node, rmw_subscription_t * subscription)
 {
   (void) node;
   DEBUG("rmw_destroy_subscription" "\n");
-  //_sub_destroy((sub_t*)subscription->data);
+  delete (Subscriber*)subscription->data;
   free(subscription);
   return RMW_RET_OK;
 }

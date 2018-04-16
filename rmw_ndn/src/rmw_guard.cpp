@@ -2,8 +2,8 @@
 
 #include <stdlib.h>
 
-#define ENABLE_DEBUG 0
-#define DEBUG(...) printf(__VA_ARGS__)
+//#define DEBUG(...) printf(__VA_ARGS__)
+#define DEBUG(...)
 
 const rmw_guard_condition_t *
 rmw_node_get_graph_guard_condition(const rmw_node_t * node)

@@ -5,55 +5,76 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <queue>
+
 #include "app.h"
 
 #define DEBUG(...) printf(__VA_ARGS__)
+
+#define WINDOW (10)
 
 class Publisher
 {
 public:
   Publisher(const char* topic_name)
-    : m_baseName(topic_name)
-    , m_counter(0)
+    : topic_name(topic_name)
+    , seq_num(0)
   {
-    face.setInterestFilter(m_baseName,
-                             std::bind(&Publisher::onInterest, this, _2),
-                             std::bind([] {
-                                 std::cout << "Prefix registered" << std::endl;
-                               }),
-                             [] (const ndn::Name& prefix, const std::string& reason) {
-                               std::cout << "Failed to register prefix: " << reason << std::endl;
-                             });
+    face.setInterestFilter(this->topic_name,
+                           std::bind(&Publisher::onInterest, this, _2),
+                           std::bind([this] {
+      DEBUG("Publisher::Publisher Prefix '%s' registered\n", this->topic_name.toUri().c_str());
+    }),
+                           [] (const ndn::Name& prefix, const std::string& reason) {
+      DEBUG("Publisher::Publisher Failed to register prefix '%s' (%s)\n", prefix.toUri().c_str(), reason.c_str());
+    });
+  }
+
+public:
+  std::vector<const void*> queue;
+
+  void push(const void* msg) {
+    queue.push_back(msg);
+    seq_num++;
+
+    if(queue.size() > WINDOW) {
+      queue.erase(queue.begin());
+    }
   }
 
 private:
-  void
-  onInterest(const ndn::Interest& interest)
-  {
-    std::cout << "<< interest for " << interest << std::endl;
+  void onInterest(const ndn::Interest& interest) {
+    ndn::Name name = interest.getName();
+    std::cout << "Publisher::onInterest " << interest << std::endl;
 
-    // create data packet with the same name as interest
-    std::shared_ptr<ndn::Data> data = std::make_shared<ndn::Data>(interest.getName());
+    if(!topic_name.isPrefixOf(name)) {
+      DEBUG("Publisher::onInterest ERROR : unmatched prefix\n");
+      return;
+    }
 
-    // prepare and assign content of the data packet
-    std::ostringstream os;
-    os << "C++ LOOL LINE #" << (m_counter++) << std::endl;
-    std::string content = os.str();
-    data->setContent(reinterpret_cast<const uint8_t*>(content.c_str()), content.size());
+    if(name[topic_name.size()] == ndn::name::Component("sync")) {
+      std::shared_ptr<ndn::Data> data = std::make_shared<ndn::Data>();
 
-    // set metainfo parameters
-    data->setFreshnessPeriod(ndn::time::seconds(10));
+      static const std::string content = "looltest";
 
-    // sign data packet
-    //m_keyChain.sign(*data);
+      data->setName(name);
+      data->setContent(reinterpret_cast<const uint8_t*>(content.c_str()), content.size());
+      data->setFreshnessPeriod(ndn::time::seconds(10));
 
-    // make data packet available for fetching
-    face.put(*data);
+      static ndn::KeyChain key;
+      key.sign(*data);
+
+      std::cout << *data << std::endl;
+      face.put(*data);
+    }
+    else {
+      DEBUG("DATA\n");
+    }
   }
 
 private:
-  ndn::Name m_baseName;
-  uint64_t m_counter;
+  ndn::Name topic_name;
+  uint64_t seq_num;
 };
 
 
@@ -75,8 +96,6 @@ rmw_create_publisher(
   ret->implementation_identifier = rmw_get_implementation_identifier();
   ret->topic_name = topic_name;
 
-  printf("TOPIC_NAME : %s\n", ret->topic_name);
-
   Publisher* pub = new Publisher(topic_name);
   ret->data = (void*)pub;
 
@@ -88,7 +107,7 @@ rmw_destroy_publisher(rmw_node_t * node, rmw_publisher_t * publisher)
 {
   (void) node;
   DEBUG("rmw_destroy_publisher" "\n");
-  //_pub_destroy((pub_t*)publisher->data);
+  delete (Publisher*)publisher->data;
   free(publisher);
   return RMW_RET_OK;
 }
@@ -100,8 +119,8 @@ rmw_publish(const rmw_publisher_t * publisher, const void * ros_message)
   (void) ros_message;
   DEBUG("rmw_publish" "\n");
 
-  pub_t* pub = (pub_t*)publisher->data;
-  //_pub_push_data(pub, ros_message);
+  Publisher* pub = (Publisher*)publisher->data;
+  pub->push(ros_message);
 
   return RMW_RET_OK;
 }

@@ -33,8 +33,9 @@ INCLUDE (FindPkgConfig)
 pkg_check_modules (NDN_CXX libndn-cxx)
 
 include_directories(rmw_ndn ${NDN_CXX_INCLUDE_DIRS})
-link_directories(rmw_ndn ${NDN_CXX_LIBRARY_DIRS} )
+link_directories(rmw_ndn ${NDN_CXX_LIBRARY_DIRS})
 target_link_libraries(rmw_ndn ${NDN_CXX_LIBRARIES})
+add_compile_options(-fPIC)
 
 # specific order: dependents before dependencies
 ament_target_dependencies(rmw_ndn

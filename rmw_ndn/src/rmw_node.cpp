@@ -4,8 +4,8 @@
 
 #include "app.h"
 
-#define ENABLE_DEBUG 0
-#define DEBUG(...) printf(__VA_ARGS__)
+//#define DEBUG(...) printf(__VA_ARGS__)
+#define DEBUG(...)
 
 const char *
 rmw_get_implementation_identifier(void)
