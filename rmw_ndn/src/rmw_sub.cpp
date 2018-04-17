@@ -45,7 +45,7 @@ private:
   {
     ndn::Name name= ndn::Name(topic_name).appendNumber(seq_num);
     DEBUG("Subscriber::requestData %s\n", name.toUri().c_str());
-    face.expressInterest(ndn::Interest(name).setMustBeFresh(true),
+    face.expressInterest(ndn::Interest(name).setMustBeFresh(false),
                          std::bind(&Subscriber::onData, this, _2),
                          std::bind(&Subscriber::onNack, this, _1),
                          std::bind(&Subscriber::onTimeout, this, _1));
@@ -62,13 +62,14 @@ private:
   {
     DEBUG("Subscriber::onData %s\n", data.getName().toUri().c_str());
     std::cout << data << std::endl;
+    seq_num++;
     requestData();
   }
 
   void
   onNack(const ndn::Interest& interest) {
     DEBUG("Subscriber::onNack %s\n", interest.getName().toUri().c_str());
-    //requestSync();
+    scheduler.scheduleEvent(ndn::time::seconds(1), [this] { requestSync(); });
   }
 
   void

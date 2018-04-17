@@ -5,6 +5,8 @@
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/data.hpp>
 
+#include <ndn-cxx/util/scheduler.hpp>
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -14,6 +16,7 @@ extern "C" {
 #endif
 
 extern ndn::Face face;
+extern ndn::Scheduler scheduler;
 
 typedef struct raw_msg_data {
 //  clist_node_t clist_node;

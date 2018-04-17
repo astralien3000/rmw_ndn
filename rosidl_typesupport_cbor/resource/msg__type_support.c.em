@@ -20,7 +20,7 @@ function_prefix = '%s__%s__rosidl_typesupport_cbor' % (spec.base_type.pkg_name, 
 // providing offsetof()
 #include <stddef.h>
 
-//#include <cbor.h>
+#include <cbor.h>
 
 #include <@(spec.base_type.pkg_name)/@(subfolder)/@(get_header_filename_from_msg_name(spec.base_type.type))__rosidl_typesupport_cbor.h>
 #include "@(spec.base_type.pkg_name)/msg/rosidl_typesupport_cbor__visibility_control.h"
@@ -191,6 +191,25 @@ size_t @(function_prefix)__@(spec.base_type.type)_serialize(const void* ros_mess
 @{
 print("    const %s__%s__%s* msg = ros_message;" % (spec.base_type.pkg_name, subfolder, spec.base_type.type));
 print("    size_t ret = 0;");
+print("    cbor_stream_t stream;")
+print("    cbor_init(&stream, (unsigned char*)buffer, buffer_size);")
+print("    cbor_clear(&stream);")
+for index, field in enumerate(spec.fields):
+    if field.type.is_primitive_type() and not field.type.is_array:
+        if field.type.type == "string":
+            print("    ret += cbor_serialize_byte_stringl(&stream, msg->%s.data, msg->%s.size);" % (field.name, field.name));
+        elif field.type.type == "int32":
+            print("    ret += cbor_serialize_int(&stream, msg->%s);" % field.name);
+        elif field.type.type == "uint32":
+            print("    ret += cbor_serialize_int(&stream, (int)msg->%s);" % field.name);
+        elif field.type.type == "int64":
+            print("    ret += cbor_serialize_int64_t(&stream, msg->%s);" % field.name);
+        elif field.type.type == "uint64":
+            print("    ret += cbor_serialize_uint64_t(&stream, msg->%s);" % field.name);
+        else:
+            print("    (void)msg;// msg->%s : (%s) NOT SUPPORTED !" % (field.name, field.type.type));
+    else:
+            print("    (void)msg;// msg->%s : NOT SUPPORTED !" % field.name);
 print("    return ret;");
 }@
 }
@@ -203,6 +222,27 @@ size_t @(function_prefix)__@(spec.base_type.type)_deserialize(void* ros_message,
 @{
 print("    %s__%s__%s* msg = ros_message;" % (spec.base_type.pkg_name, subfolder, spec.base_type.type));
 print("    size_t ret = 0;");
+print("    cbor_stream_t stream;")
+print("    cbor_init(&stream, (unsigned char*)buffer, buffer_size);")
+print("    stream.pos = buffer_size;")
+for index, field in enumerate(spec.fields):
+    if field.type.is_primitive_type() and not field.type.is_array:
+        if field.type.type == "string":
+            print("    msg->%s.capacity = buffer_size;" % field.name);
+            print("    msg->%s.data = realloc(msg->%s.data, sizeof(char)*buffer_size);" % (field.name, field.name));
+            print("    ret += msg->%s.size = cbor_deserialize_byte_string(&stream, ret, msg->%s.data, msg->%s.capacity);" % (field.name, field.name, field.name));
+        elif field.type.type == "int32":
+            print("    ret += cbor_deserialize_int(&stream, ret, &msg->%s);" % field.name);
+        elif field.type.type == "uint32":
+            print("    ret += cbor_deserialize_int(&stream, ret, (int*)&msg->%s);" % field.name);
+        elif field.type.type == "int64":
+            print("    ret += cbor_deserialize_int64_t(&stream, ret, &msg->%s);" % field.name);
+        elif field.type.type == "uint64":
+            print("    ret += cbor_deserialize_uint64_t(&stream, ret, &msg->%s);" % field.name);
+        else:
+            print("    (void)msg;// msg->%s : (%s) NOT SUPPORTED !" % (field.name, field.type.type));
+    else:
+            print("    (void)msg;// msg->%s : NOT SUPPORTED !" % field.name);
 print("    return ret;");
 }@
 }
@@ -215,8 +255,8 @@ static const rosidl_typesupport_cbor__MessageMembers @(function_prefix)__@(spec.
   sizeof(@(spec.base_type.pkg_name)__@(subfolder)__@(spec.base_type.type)),
 @[if spec.fields]@
   @(function_prefix)__@(spec.base_type.type)_message_member_array,  // message members
-  @(function_prefix)__@(spec.base_type.type)_serialize,
-  @(function_prefix)__@(spec.base_type.type)_deserialize
+  42,
+  43
 @[else]@
   0,  // message members
   0,

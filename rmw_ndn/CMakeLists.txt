@@ -35,11 +35,11 @@ pkg_check_modules (NDN_CXX libndn-cxx)
 include_directories(rmw_ndn ${NDN_CXX_INCLUDE_DIRS})
 link_directories(rmw_ndn ${NDN_CXX_LIBRARY_DIRS})
 target_link_libraries(rmw_ndn ${NDN_CXX_LIBRARIES})
-add_compile_options(-fPIC)
 
 # specific order: dependents before dependencies
 ament_target_dependencies(rmw_ndn
   "rosidl_typesupport_cbor"
+  "rosidl_typesupport_cbor_cpp"
   "rmw"
 )
 
@@ -55,11 +55,12 @@ ament_export_include_directories(include)
 ament_export_libraries(rmw_ndn)
 
 ament_export_dependencies(rosidl_typesupport_cbor)
+ament_export_dependencies(rosidl_typesupport_cbor_cpp)
 ament_export_dependencies(rmw)
 
 register_rmw_implementation(
   "c:rosidl_typesupport_c:rosidl_typesupport_cbor"
-  "cpp:rosidl_typesupport_cpp:rosidl_typesupport_cbor")
+  "cpp:rosidl_typesupport_cpp:rosidl_typesupport_cbor_cpp")
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
