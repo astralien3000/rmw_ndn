@@ -34,7 +34,7 @@ extern "C"
 #endif
 
 // TODO(dirk-thomas) these visibility macros should be message package specific
-ROSIDL_TYPESUPPORT_INTROSPECTION_CPP_PUBLIC
+ROSIDL_TYPESUPPORT_CBOR_CPP_PUBLIC
 const rosidl_message_type_support_t *
   ROSIDL_TYPESUPPORT_INTERFACE__MESSAGE_SYMBOL_NAME(rosidl_typesupport_cbor_cpp, @(spec.base_type.pkg_name), @(subfolder), @(spec.base_type.type))();
 

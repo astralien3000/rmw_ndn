@@ -13,9 +13,15 @@
 @#  - get_header_filename_from_msg_name (function)
 @#######################################################################
 @
+@{
+function_prefix = '%s__%s__rosidl_typesupport_cbor' % (spec.base_type.pkg_name, subfolder)
+}@
+
 // providing offsetof()
 #include <cstddef>
 #include <vector>
+
+#include <cbor.h>
 
 #include "rosidl_generator_c/message_type_support_struct.h"
 #include "rosidl_typesupport_cpp/message_type_support.hpp"
@@ -137,16 +143,83 @@ for index, field in enumerate(spec.fields):
 }@
 };
 
+@
+@#######################################################################
+@# Serialize function
+@#######################################################################
+size_t @(function_prefix)__@(spec.base_type.type)_serialize(const void* ros_message, char* buffer, size_t buffer_size) {
+@{
+print("    auto msg = (const %s::%s::%s*)ros_message;" % (spec.base_type.pkg_name, subfolder, spec.base_type.type));
+print("    size_t ret = 0;");
+print("    cbor_stream_t stream;")
+print("    cbor_init(&stream, (unsigned char*)buffer, buffer_size);")
+print("    cbor_clear(&stream);")
+for index, field in enumerate(spec.fields):
+    if field.type.is_primitive_type() and not field.type.is_array:
+        if field.type.type == "string":
+            print("    ret += cbor_serialize_byte_stringl(&stream, msg->%s.c_str(), msg->%s.size());" % (field.name, field.name));
+        elif field.type.type == "int32":
+            print("    ret += cbor_serialize_int(&stream, msg->%s);" % field.name);
+        elif field.type.type == "uint32":
+            print("    ret += cbor_serialize_int(&stream, (int)msg->%s);" % field.name);
+        elif field.type.type == "int64":
+            print("    ret += cbor_serialize_int64_t(&stream, msg->%s);" % field.name);
+        elif field.type.type == "uint64":
+            print("    ret += cbor_serialize_uint64_t(&stream, msg->%s);" % field.name);
+        else:
+            print("    (void)msg;// msg->%s : (%s) NOT SUPPORTED !" % (field.name, field.type.type));
+    else:
+            print("    (void)msg;// msg->%s : NOT SUPPORTED !" % field.name);
+print("    return ret;");
+}@
+}
+
+@
+@#######################################################################
+@# Serialize function
+@#######################################################################
+size_t @(function_prefix)__@(spec.base_type.type)_deserialize(void* ros_message, const char* buffer, size_t buffer_size) {
+@{
+print("    auto msg = (%s::%s::%s*)ros_message;" % (spec.base_type.pkg_name, subfolder, spec.base_type.type));
+print("    size_t ret = 0;");
+print("    cbor_stream_t stream;")
+print("    cbor_init(&stream, (unsigned char*)buffer, buffer_size);")
+print("    stream.pos = buffer_size;")
+for index, field in enumerate(spec.fields):
+    if field.type.is_primitive_type() and not field.type.is_array:
+        if field.type.type == "string":
+            print("    msg->%s.reserve(buffer_size);" % field.name);
+            print("    ret += cbor_deserialize_byte_string(&stream, ret, (char*)msg->%s.data(), msg->%s.capacity());" % (field.name, field.name));
+        elif field.type.type == "int32":
+            print("    ret += cbor_deserialize_int(&stream, ret, &msg->%s);" % field.name);
+        elif field.type.type == "uint32":
+            print("    ret += cbor_deserialize_int(&stream, ret, (int*)&msg->%s);" % field.name);
+        elif field.type.type == "int64":
+            print("    ret += cbor_deserialize_int64_t(&stream, ret, &msg->%s);" % field.name);
+        elif field.type.type == "uint64":
+            print("    ret += cbor_deserialize_uint64_t(&stream, ret, &msg->%s);" % field.name);
+        else:
+            print("    (void)msg;// msg->%s : (%s) NOT SUPPORTED !" % (field.name, field.type.type));
+    else:
+            print("    (void)msg;// msg->%s : NOT SUPPORTED !" % field.name);
+print("    return ret;");
+}@
+}
 @[end if]@
+
 static const ::rosidl_typesupport_cbor_cpp::MessageMembers @(spec.base_type.type)_message_members = {
   "@(spec.base_type.pkg_name)",  // package name
   "@(spec.base_type.type)",  // message name
   @(len(spec.fields)),  // number of fields
   sizeof(@(spec.base_type.pkg_name)::@(subfolder)::@(spec.base_type.type)),
 @[if spec.fields]@
-  @(spec.base_type.type)_message_member_array  // message members
+  @(spec.base_type.type)_message_member_array,  // message members
+  @(function_prefix)__@(spec.base_type.type)_serialize,
+  @(function_prefix)__@(spec.base_type.type)_deserialize
 @[else]@
-  0  // message members
+  0,  // message members
+  0,
+  0
 @[end if]@
 };
 
@@ -167,7 +240,7 @@ namespace rosidl_typesupport_cbor_cpp
 {
 
 template<>
-ROSIDL_TYPESUPPORT_INTROSPECTION_CPP_PUBLIC
+ROSIDL_TYPESUPPORT_CBOR_CPP_PUBLIC
 const rosidl_message_type_support_t *
 get_message_type_support_handle<@(spec.base_type.pkg_name)::@(subfolder)::@(spec.base_type.type)>()
 {
@@ -181,7 +254,7 @@ extern "C"
 {
 #endif
 
-ROSIDL_TYPESUPPORT_INTROSPECTION_CPP_PUBLIC
+ROSIDL_TYPESUPPORT_CBOR_CPP_PUBLIC
 const rosidl_message_type_support_t *
 ROSIDL_TYPESUPPORT_INTERFACE__MESSAGE_SYMBOL_NAME(rosidl_typesupport_cbor_cpp, @(spec.base_type.pkg_name), @(subfolder), @(spec.base_type.type))() {
   return &::@(spec.base_type.pkg_name)::@(subfolder)::rosidl_typesupport_cbor_cpp::@(spec.base_type.type)_message_type_support_handle;

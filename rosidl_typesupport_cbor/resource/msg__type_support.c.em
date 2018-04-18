@@ -255,8 +255,8 @@ static const rosidl_typesupport_cbor__MessageMembers @(function_prefix)__@(spec.
   sizeof(@(spec.base_type.pkg_name)__@(subfolder)__@(spec.base_type.type)),
 @[if spec.fields]@
   @(function_prefix)__@(spec.base_type.type)_message_member_array,  // message members
-  42,
-  43
+  @(function_prefix)__@(spec.base_type.type)_serialize,
+  @(function_prefix)__@(spec.base_type.type)_deserialize
 @[else]@
   0,  // message members
   0,

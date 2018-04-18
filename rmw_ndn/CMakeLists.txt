@@ -15,6 +15,7 @@ find_package(ament_cmake_ros REQUIRED)
 
 find_package(rmw REQUIRED)
 find_package(rosidl_typesupport_cbor REQUIRED)
+find_package(rosidl_typesupport_cbor_cpp REQUIRED)
 
 include_directories(include)
 

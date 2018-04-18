@@ -103,7 +103,7 @@ if(rosidl_generate_interfaces_LIBRARY_NAME)
 endif()
 if(WIN32)
   target_compile_definitions(${rosidl_generate_interfaces_TARGET}${_target_suffix}
-    PRIVATE "ROSIDL_TYPESUPPORT_INTROSPECTION_CPP_BUILDING_DLL")
+    PRIVATE "ROSIDL_TYPESUPPORT_CBOR_CPP_BUILDING_DLL")
 endif()
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set_target_properties(${rosidl_generate_interfaces_TARGET}${_target_suffix} PROPERTIES

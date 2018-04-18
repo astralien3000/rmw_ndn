@@ -13,7 +13,7 @@ endif()
 
 find_package(ament_cmake_python REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
-find_package(rosidl_typesupport_introspection_c REQUIRED)
+find_package(rosidl_typesupport_cbor REQUIRED)
 
 ament_export_dependencies(rosidl_cmake)
 ament_export_dependencies(rosidl_generator_c)
@@ -24,10 +24,10 @@ ament_export_include_directories(include)
 
 ament_python_install_package(${PROJECT_NAME})
 
-add_library(${PROJECT_NAME} src/identifier.cpp)
+add_library(${PROJECT_NAME} src/identifier.cpp src/cbor.c)
 if(WIN32)
   target_compile_definitions(${PROJECT_NAME}
-    PRIVATE "ROSIDL_TYPESUPPORT_INTROSPECTION_CPP_BUILDING_DLL")
+    PRIVATE "ROSIDL_TYPESUPPORT_CBOR_CPP_BUILDING_DLL")
 endif()
 target_include_directories(${PROJECT_NAME}
   PUBLIC

@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ROSIDL_TYPESUPPORT_INTROSPECTION_CPP__IDENTIFIER_HPP_
-#define ROSIDL_TYPESUPPORT_INTROSPECTION_CPP__IDENTIFIER_HPP_
+#ifndef ROSIDL_TYPESUPPORT_CBOR_CPP__IDENTIFIER_HPP_
+#define ROSIDL_TYPESUPPORT_CBOR_CPP__IDENTIFIER_HPP_
 
 #include "rosidl_typesupport_cbor_cpp/visibility_control.h"
 
 namespace rosidl_typesupport_cbor_cpp
 {
 
-ROSIDL_TYPESUPPORT_INTROSPECTION_CPP_IMPORT
+ROSIDL_TYPESUPPORT_CBOR_CPP_IMPORT
 extern const char * typesupport_identifier;
 
 }  // namespace rosidl_typesupport_cbor_cpp
 
-#endif  // ROSIDL_TYPESUPPORT_INTROSPECTION_CPP__IDENTIFIER_HPP_
+#endif  // ROSIDL_TYPESUPPORT_CBOR_CPP__IDENTIFIER_HPP_

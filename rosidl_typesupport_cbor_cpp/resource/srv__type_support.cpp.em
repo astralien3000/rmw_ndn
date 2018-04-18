@@ -62,7 +62,7 @@ namespace rosidl_typesupport_cbor_cpp
 {
 
 template<>
-ROSIDL_TYPESUPPORT_INTROSPECTION_CPP_PUBLIC
+ROSIDL_TYPESUPPORT_CBOR_CPP_PUBLIC
 const rosidl_service_type_support_t *
 get_service_type_support_handle<@(spec.pkg_name)::srv::@(spec.srv_name)>()
 {
@@ -107,7 +107,7 @@ extern "C"
 {
 #endif
 
-ROSIDL_TYPESUPPORT_INTROSPECTION_CPP_PUBLIC
+ROSIDL_TYPESUPPORT_CBOR_CPP_PUBLIC
 const rosidl_service_type_support_t *
 ROSIDL_TYPESUPPORT_INTERFACE__SERVICE_SYMBOL_NAME(rosidl_typesupport_cbor_cpp, @(spec.pkg_name), @(spec.srv_name))() {
   return ::rosidl_typesupport_cbor_cpp::get_service_type_support_handle<@(spec.pkg_name)::srv::@(spec.srv_name)>();

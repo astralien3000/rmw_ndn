@@ -17,7 +17,7 @@
 namespace rosidl_typesupport_cbor_cpp
 {
 
-ROSIDL_TYPESUPPORT_INTROSPECTION_CPP_EXPORT
+ROSIDL_TYPESUPPORT_CBOR_CPP_EXPORT
 const char * typesupport_identifier = "rosidl_typesupport_cbor_cpp";
 
 }  // namespace rosidl_typesupport_cbor_cpp

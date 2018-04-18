@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ROSIDL_TYPESUPPORT_INTROSPECTION_CPP__MESSAGE_INTROSPECTION_HPP_
-#define ROSIDL_TYPESUPPORT_INTROSPECTION_CPP__MESSAGE_INTROSPECTION_HPP_
+#ifndef ROSIDL_TYPESUPPORT_CBOR_CPP__MESSAGE_CBOR_HPP_
+#define ROSIDL_TYPESUPPORT_CBOR_CPP__MESSAGE_CBOR_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -25,7 +25,7 @@
 namespace rosidl_typesupport_cbor_cpp
 {
 
-typedef struct ROSIDL_TYPESUPPORT_INTROSPECTION_CPP_PUBLIC MessageMember
+typedef struct ROSIDL_TYPESUPPORT_CBOR_CPP_PUBLIC MessageMember
 {
   const char * name_;
   uint8_t type_id_;
@@ -42,15 +42,17 @@ typedef struct ROSIDL_TYPESUPPORT_INTROSPECTION_CPP_PUBLIC MessageMember
   void (* resize_function)(void *, size_t size);
 } MessageMember;
 
-typedef struct ROSIDL_TYPESUPPORT_INTROSPECTION_CPP_PUBLIC MessageMembers
+typedef struct ROSIDL_TYPESUPPORT_CBOR_CPP_PUBLIC MessageMembers
 {
   const char * package_name_;
   const char * message_name_;
   uint32_t member_count_;
   size_t size_of_;
   const MessageMember * members_;
+  size_t (*serialize_)(const void*, char*, size_t);
+  size_t (*deserialize_)(void*, const char*, size_t);
 } MessageMembers;
 
 }  // namespace rosidl_typesupport_cbor_cpp
 
-#endif  // ROSIDL_TYPESUPPORT_INTROSPECTION_CPP__MESSAGE_INTROSPECTION_HPP_
+#endif  // ROSIDL_TYPESUPPORT_CBOR_CPP__MESSAGE_CBOR_HPP_
