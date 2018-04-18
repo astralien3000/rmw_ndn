@@ -245,7 +245,6 @@ void dump_memory(const unsigned char *data, size_t size)
 
 void cbor_init(cbor_stream_t *stream, unsigned char *buffer, size_t size)
 {
-  DEBUG("LOOL!\n");
     if (!stream) {
         return;
     }

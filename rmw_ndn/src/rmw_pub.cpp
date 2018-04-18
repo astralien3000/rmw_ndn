@@ -1,6 +1,7 @@
 #include "rmw/rmw.h"
 
-#include "rosidl_typesupport_cbor/message_introspection.h"
+#include <rosidl_typesupport_cbor/message_introspection.h>
+#include <rosidl_typesupport_cbor_cpp/identifier.hpp>
 
 #include <stdlib.h>
 #include <string.h>
@@ -9,7 +10,8 @@
 
 #include "app.h"
 
-#define DEBUG(...) printf(__VA_ARGS__)
+//#define DEBUG(...) printf(__VA_ARGS__)
+#define DEBUG(...)
 
 #define WINDOW (10)
 
@@ -107,29 +109,21 @@ private:
 
       uint64_t req_seq_num = req_seq_num_comp.toNumber();
 
-      if(req_seq_num > _seq_num) {
+      if(req_seq_num >= _seq_num) {
         DEBUG("Publisher::onInterest SKIP : data %i not produced (%i)\n", (int)req_seq_num, (int)_seq_num);
         return;
       }
 
       const uint64_t diff_seq_num = _seq_num - req_seq_num;
-      if(diff_seq_num >= WINDOW) {
+      if(diff_seq_num > _queue.size()) {
         DEBUG("Publisher::onInterest SKIP : data %i outdated (%i)\n", (int)req_seq_num, (int)_seq_num);
+        return;
       }
 
       face.put(_queue[_queue.size()-diff_seq_num]);
     }
   }
 };
-
-#include <rosidl_typesupport_cbor_cpp/identifier.hpp>
-#include <rosidl_typesupport_cbor/identifier.h>
-
-#include <rosidl_typesupport_cpp/identifier.hpp>
-#include <rosidl_typesupport_c/identifier.h>
-
-#include <rosidl_typesupport_introspection_cpp/identifier.hpp>
-#include <rosidl_typesupport_introspection_c/identifier.h>
 
 rmw_publisher_t *
 rmw_create_publisher(
@@ -155,10 +149,6 @@ rmw_create_publisher(
   }
   rosidl_typesupport_cbor__MessageMembers* tsdata = (rosidl_typesupport_cbor__MessageMembers*)ts->data;
 
-  DEBUG("%s\n", type_support->typesupport_identifier);
-  DEBUG("%s\n", ts->typesupport_identifier);
-  DEBUG("%s\n", rosidl_typesupport_cbor_cpp::typesupport_identifier);
-  DEBUG("%p\n", tsdata->serialize_);
   Publisher* pub = new Publisher(topic_name, tsdata->serialize_);
   ret->data = (void*)pub;
 

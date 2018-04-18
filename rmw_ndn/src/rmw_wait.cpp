@@ -9,6 +9,9 @@
 //#define DEBUG(...) printf(__VA_ARGS__)
 #define DEBUG(...)
 
+class Subscriber;
+bool can_take(Subscriber* sub);
+
 rmw_ret_t
 rmw_wait(
     rmw_subscriptions_t * subscriptions,
@@ -46,12 +49,20 @@ rmw_wait(
     bool stop = false;
 
     for(size_t i = 0 ; i < subscriptions->subscriber_count ; i++) {
-      sub_t* sub = (sub_t*)subscriptions->subscribers[i];
+      Subscriber* sub = (Subscriber*)subscriptions->subscribers[i];
+      if(can_take(sub)) {
+        DEBUG("Can take !\n");
+        stop = true;
+      }
     }
 
     if(stop) {
       for(size_t i = 0 ; i < subscriptions->subscriber_count ; i++) {
-        sub_t* sub = (sub_t*)subscriptions->subscribers[i];
+        Subscriber* sub = (Subscriber*)subscriptions->subscribers[i];
+        if(!can_take(sub)) {
+          subscriptions->subscribers[i] = NULL;
+        }
+        return RMW_RET_OK;
       }
       return RMW_RET_OK;
     }

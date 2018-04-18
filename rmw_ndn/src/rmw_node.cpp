@@ -52,6 +52,5 @@ rmw_destroy_node(rmw_node_t * node)
 {
   DEBUG("rmw_destroy_node" "\n");
   free(node);
-  app_destroy();
   return RMW_RET_OK;
 }
