@@ -6,6 +6,9 @@
 
 #include <ndn-cxx/face.hpp>
 
+#include <boost/chrono.hpp>
+using namespace boost::chrono;
+
 //#define DEBUG(...) printf(__VA_ARGS__)
 #define DEBUG(...)
 
@@ -29,11 +32,12 @@ rmw_wait(
   (void) wait_timeout;
   DEBUG("rmw_wait" "\n");
 
-  const auto begin = ndn::time::getUnixEpoch();
+  const auto begin = system_clock::now();
   
   ndn::time::milliseconds timeout = ndn::time::milliseconds(0);
   if(wait_timeout) {
     timeout = ndn::time::milliseconds(wait_timeout->nsec/1000000 + wait_timeout->sec*1000);
+    DEBUG("wait %i ms\n", timeout);
   }
   
   const auto end = begin + timeout;
@@ -66,8 +70,7 @@ rmw_wait(
       }
       return RMW_RET_OK;
     }
-
-  } while((ndn::time::getUnixEpoch() < end));
+  } while(system_clock::now() < end);
 
   return RMW_RET_TIMEOUT;
 }

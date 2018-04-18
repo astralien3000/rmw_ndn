@@ -2,6 +2,7 @@
 
 #include <rosidl_typesupport_cbor/message_introspection.h>
 #include <rosidl_typesupport_cbor_cpp/identifier.hpp>
+#include <rosidl_typesupport_cbor/identifier.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -131,10 +132,13 @@ rmw_create_subscription(
   ret->implementation_identifier = rmw_get_implementation_identifier();
   ret->topic_name = topic_name;
 
-  const rosidl_message_type_support_t * ts = get_message_typesupport_handle(type_support, rosidl_typesupport_cbor_cpp::typesupport_identifier);
+  const rosidl_message_type_support_t * ts = get_message_typesupport_handle(type_support, rosidl_typesupport_cbor__identifier);
   if (!ts) {
-    DEBUG("type support not from this implementation\n");
-    return NULL;
+    ts = get_message_typesupport_handle(type_support, rosidl_typesupport_cbor_cpp::typesupport_identifier);
+    if (!ts) {
+      DEBUG("type support not from this implementation\n");
+      return NULL;
+    }
   }
   rosidl_typesupport_cbor__MessageMembers* tsdata = (rosidl_typesupport_cbor__MessageMembers*)ts->data;
 

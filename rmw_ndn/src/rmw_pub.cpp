@@ -2,6 +2,7 @@
 
 #include <rosidl_typesupport_cbor/message_introspection.h>
 #include <rosidl_typesupport_cbor_cpp/identifier.hpp>
+#include <rosidl_typesupport_cbor/identifier.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +24,7 @@ public:
 private:
   ndn::Name _topic_name;
   uint64_t _seq_num;
+  uint64_t _req_seq_num;
   serialize_func_t _serialize;
   std::vector<ndn::Data> _queue;
 
@@ -30,6 +32,7 @@ public:
   Publisher(const char* topic_name, serialize_func_t serialize)
     : _topic_name(topic_name)
     , _seq_num(0)
+    , _req_seq_num(0)
     , _serialize(serialize)
   {
     face.setInterestFilter(_topic_name,
@@ -60,6 +63,11 @@ public:
     key.sign(data_msg);
 
     _queue.push_back(data_msg);
+
+    if(_req_seq_num >= _seq_num) {
+      face.put(data_msg);
+    }
+
     _seq_num++;
 
     if(_queue.size() > WINDOW) {
@@ -111,6 +119,7 @@ private:
 
       if(req_seq_num >= _seq_num) {
         DEBUG("Publisher::onInterest SKIP : data %i not produced (%i)\n", (int)req_seq_num, (int)_seq_num);
+        _req_seq_num = req_seq_num;
         return;
       }
 
@@ -142,10 +151,13 @@ rmw_create_publisher(
   ret->implementation_identifier = rmw_get_implementation_identifier();
   ret->topic_name = topic_name;
 
-  const rosidl_message_type_support_t * ts = get_message_typesupport_handle(type_support, rosidl_typesupport_cbor_cpp::typesupport_identifier);
+  const rosidl_message_type_support_t * ts = get_message_typesupport_handle(type_support, rosidl_typesupport_cbor__identifier);
   if (!ts) {
-    DEBUG("type support not from this implementation\n");
-    return NULL;
+    ts = get_message_typesupport_handle(type_support, rosidl_typesupport_cbor_cpp::typesupport_identifier);
+    if (!ts) {
+      DEBUG("type support not from this implementation\n");
+      return NULL;
+    }
   }
   rosidl_typesupport_cbor__MessageMembers* tsdata = (rosidl_typesupport_cbor__MessageMembers*)ts->data;
 
