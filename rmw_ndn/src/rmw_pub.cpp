@@ -8,11 +8,12 @@
 #include <string.h>
 
 #include <queue>
+#include <iostream>
 
 #include "app.h"
 
-//#define DEBUG(...) printf(__VA_ARGS__)
-#define DEBUG(...)
+#define DEBUG(...) printf(__VA_ARGS__)
+//#define DEBUG(...)
 
 #define WINDOW (10)
 
@@ -55,7 +56,9 @@ public:
 
     ndn::Data data_msg;
     ndn::Name name = _topic_name;
-    name.appendNumber(_seq_num);
+    std::ostringstream os;
+    os << _seq_num;
+    name.append((const uint8_t*)os.str().c_str(), os.str().size());
     data_msg.setName(name);
     data_msg.setContent((const uint8_t *)data, size);
 
@@ -94,7 +97,9 @@ private:
       DEBUG("SYNC\n");
 
       ndn::Data data;
-      name.appendNumber(_seq_num);
+      std::ostringstream os;
+      os << _seq_num;
+      name.append((const uint8_t*)os.str().c_str(), os.str().size());
 
       data.setName(name);
       data.setContent(_queue.back().getContent());
@@ -109,13 +114,8 @@ private:
       DEBUG("DATA\n");
 
       ndn::name::Component req_seq_num_comp = name[_topic_name.size()];
-
-      if(!req_seq_num_comp.isNumber()) {
-        DEBUG("Publisher::onInterest ERROR : not a sequence number\n");
-        return;
-      }
-
-      uint64_t req_seq_num = req_seq_num_comp.toNumber();
+      std::string req_seq_num_str = req_seq_num_comp.toUri();
+      uint64_t req_seq_num = std::stoull(req_seq_num_str);
 
       if(req_seq_num >= _seq_num) {
         DEBUG("Publisher::onInterest SKIP : data %i not produced (%i)\n", (int)req_seq_num, (int)_seq_num);

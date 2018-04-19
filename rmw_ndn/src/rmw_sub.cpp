@@ -46,9 +46,15 @@ public:
 private:
   void requestSync()
   {
-    ndn::Name name= ndn::Name(_topic_name).append("sync").appendVersion();
+    ndn::Name name= ndn::Name(_topic_name).append("sync");
+    std::ostringstream os;
+    os << std::rand();
+    name.append((const uint8_t*)os.str().c_str(), os.str().size());
     DEBUG("Subscriber::requestSync %s\n", name.toUri().c_str());
-    face.expressInterest(ndn::Interest(name).setMustBeFresh(true),
+    ndn::Interest interest(name);
+    interest.setMustBeFresh(true);
+    interest.setInterestLifetime(ndn::time::seconds(10));
+    face.expressInterest(interest,
                          std::bind(&Subscriber::onSyncData, this, _2),
                          std::bind(&Subscriber::onNack, this, _1),
                          std::bind(&Subscriber::onTimeout, this, _1));
@@ -56,9 +62,15 @@ private:
 
   void requestData()
   {
-    ndn::Name name= ndn::Name(_topic_name).appendNumber(_seq_num);
+    ndn::Name name= ndn::Name(_topic_name);
+    std::ostringstream os;
+    os << _seq_num;
+    name.append((const uint8_t*)os.str().c_str(), os.str().size());
     DEBUG("Subscriber::requestData %s\n", name.toUri().c_str());
-    face.expressInterest(ndn::Interest(name).setMustBeFresh(false),
+    ndn::Interest interest(name);
+    interest.setMustBeFresh(false);
+    interest.setInterestLifetime(ndn::time::seconds(10));
+    face.expressInterest(interest,
                          std::bind(&Subscriber::onData, this, _2),
                          std::bind(&Subscriber::onNack, this, _1),
                          std::bind(&Subscriber::onTimeout, this, _1));
@@ -69,9 +81,8 @@ private:
     ndn::Name name = data.getName();
     DEBUG("Subscriber::onSyncData %s\n", name.toUri().c_str());
     ndn::name::Component seq_num_comp = *name.rbegin();
-    if(seq_num_comp.isNumber()) {
-      _seq_num = seq_num_comp.toNumber();
-    }
+    std::string req_seq_num_str = seq_num_comp.toUri();
+    _seq_num = std::stoull(req_seq_num_str);
     requestData();
   }
 
