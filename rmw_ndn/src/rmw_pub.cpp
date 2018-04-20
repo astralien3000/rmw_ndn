@@ -12,8 +12,8 @@
 
 #include "app.h"
 
-#define DEBUG(...) printf(__VA_ARGS__)
-//#define DEBUG(...)
+//#define DEBUG(...) printf(__VA_ARGS__)
+#define DEBUG(...)
 
 #define WINDOW (10)
 
@@ -44,6 +44,23 @@ public:
                            [] (const ndn::Name& prefix, const std::string& reason) {
       DEBUG("Publisher::Publisher Failed to register prefix '%s' (%s)\n", prefix.toUri().c_str(), reason.c_str());
     });
+
+    heartbeat();
+  }
+
+private:
+  void heartbeat(void) {
+    scheduler.scheduleEvent(ndn::time::seconds(1), std::bind(&Publisher::heartbeat, this));
+    ndn::Interest interest;
+    ndn::Name interest_name = discovery_prefix;
+    interest_name.append("topic").append(_topic_name);
+    interest.setName(interest_name);
+    interest.setMustBeFresh(true);
+    interest.setInterestLifetime(ndn::time::seconds(1));
+    face.expressInterest(interest,
+                         std::bind([](const ndn::Data&) {}, _2),
+                         std::bind([](const ndn::Interest&) {}, _1),
+                         std::bind([](const ndn::Interest&) {}, _1));
   }
 
 public:

@@ -41,6 +41,22 @@ public:
   {
     DEBUG("Subscriber::topic_name = %s\n", topic_name.c_str());
     requestSync();
+    heartbeat();
+  }
+
+private:
+  void heartbeat(void) {
+    scheduler.scheduleEvent(ndn::time::seconds(1), std::bind(&Subscriber::heartbeat, this));
+    ndn::Interest interest;
+    ndn::Name interest_name = discovery_prefix;
+    interest_name.append("topic").append(_topic_name);
+    interest.setName(interest_name);
+    interest.setMustBeFresh(true);
+    interest.setInterestLifetime(ndn::time::seconds(1));
+    face.expressInterest(interest,
+                         std::bind([](const ndn::Data&) {}, _2),
+                         std::bind([](const ndn::Interest&) {}, _1),
+                         std::bind([](const ndn::Interest&) {}, _1));
   }
 
 private:

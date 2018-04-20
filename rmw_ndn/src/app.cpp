@@ -8,3 +8,5 @@
 boost::asio::io_service ioService;
 ndn::Face face(ioService);
 ndn::Scheduler scheduler(ioService);
+
+const ndn::Name discovery_prefix("/ros2/discovery");

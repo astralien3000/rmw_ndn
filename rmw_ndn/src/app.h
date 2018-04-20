@@ -18,6 +18,8 @@ extern "C" {
 extern ndn::Face face;
 extern ndn::Scheduler scheduler;
 
+extern const ndn::Name discovery_prefix;
+
 #ifdef __cplusplus
 }
 #endif
