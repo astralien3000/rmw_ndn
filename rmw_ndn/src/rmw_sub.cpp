@@ -52,7 +52,7 @@ private:
     interest_name.append("topic").append(_topic_name);
     interest.setName(interest_name);
     interest.setMustBeFresh(true);
-    interest.setInterestLifetime(ndn::time::seconds(1));
+    interest.setInterestLifetime(ndn::time::seconds(0));
     face.expressInterest(interest,
                          std::bind([](const ndn::Data&) {}, _2),
                          std::bind([](const ndn::Interest&) {}, _1),

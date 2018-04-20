@@ -62,7 +62,7 @@ private:
     interest_name.append("node").append(_node_name);
     interest.setName(interest_name);
     interest.setMustBeFresh(true);
-    interest.setInterestLifetime(ndn::time::seconds(1));
+    interest.setInterestLifetime(ndn::time::seconds(0));
     face.expressInterest(interest,
                          std::bind([](const ndn::Data&) {}, _2),
                          std::bind([](const ndn::Interest&) {}, _1),
@@ -79,7 +79,7 @@ private:
         erase_list.push_back(it);
       }
     }
-    for(auto it = erase_list.begin() ; it != erase_list.end() ; it++) {
+    for(auto it = erase_list.cbegin() ; it != erase_list.cend() ; it++) {
       _discovered_nodes.erase(*it);
     }
   }
@@ -87,7 +87,7 @@ private:
   void heartbeat(void) {
     scheduler.scheduleEvent(ndn::time::seconds(1), std::bind(&Discovery::heartbeat, this));
     send();
-    //clean();
+    clean();
   }
 
 private:
@@ -96,11 +96,11 @@ private:
     DEBUG("Discovery::onInterest %s\n", name.toUri().c_str());
     if(name[2] == ndn::name::Component("node")) {
       DEBUG("NODE\n");
-      _discovered_nodes[name.getSubName(3).toUri()] = 5;
+      _discovered_nodes[name.getSubName(3).toUri()] = 1;
     }
     if(name[2] == ndn::name::Component("topic")) {
       DEBUG("TOPIC\n");
-      _discovered_topics[name.getSubName(3).toUri()] = 5;
+      _discovered_topics[name.getSubName(3).toUri()] = 1;
     }
   }
 };
