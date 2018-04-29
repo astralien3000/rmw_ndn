@@ -12,96 +12,20 @@
 
 #include "app.h"
 
+#include "discovery.hpp"
+
 //#define DEBUG(...) printf(__VA_ARGS__)
 #define DEBUG(...)
 
-class Discovery
+class Node
 {
 private:
-  ndn::Name _node_name;
-  std::map<std::string, int> _discovered_nodes;
-  std::map<std::string, int> _discovered_topics;
+  DiscoveryHeartbeatEmiter _heartbeat;
 
 public:
-  Discovery(const char* name)
-    : _node_name(name)
+  Node(const char* name)
+    : _heartbeat("node", name)
   {
-    face.setInterestFilter(discovery_prefix,
-                           std::bind(&Discovery::onInterest, this, _2),
-                           std::bind([this] {
-      DEBUG("Discovery::Discovery Prefix '%s' registered\n", discovery_prefix.toUri().c_str());
-    }),
-                           [] (const ndn::Name& prefix, const std::string& reason) {
-      DEBUG("Discovery::Discovery Failed to register prefix '%s' (%s)\n", prefix.toUri().c_str(), reason.c_str());
-    });
-
-    heartbeat();
-  }
-
-public:
-  std::vector<std::string> getDiscoveredNames(void) {
-    std::vector<std::string> ret;
-    for(auto it = _discovered_nodes.begin() ; it != _discovered_nodes.end() ; it++) {
-      ret.push_back(it->first);
-    }
-    return ret;
-  }
-
-  std::map<std::string, std::set<std::string>> getDiscoveredTopics(void) {
-    std::map<std::string, std::set<std::string>> ret;
-    for(auto it = _discovered_topics.begin() ; it != _discovered_topics.end() ; it++) {
-      ret[it->first] = std::set<std::string>();
-    }
-    return ret;
-  }
-
-private:
-  inline void send(void) {
-    ndn::Interest interest;
-    ndn::Name interest_name = discovery_prefix;
-    interest_name.append("node").append(_node_name);
-    interest.setName(interest_name);
-    interest.setMustBeFresh(true);
-    interest.setInterestLifetime(ndn::time::seconds(0));
-    face.expressInterest(interest,
-                         std::bind([](const ndn::Data&) {}, _2),
-                         std::bind([](const ndn::Interest&) {}, _1),
-                         std::bind([](const ndn::Interest&) {}, _1));
-  }
-
-  inline void clean(void) {
-    std::vector<decltype(_discovered_nodes)::iterator> erase_list;
-    for(auto it = _discovered_nodes.begin() ; it != _discovered_nodes.end() ; it++) {
-      if(it->second) {
-        it->second--;
-      }
-      else {
-        erase_list.push_back(it);
-      }
-    }
-    for(auto it = erase_list.cbegin() ; it != erase_list.cend() ; it++) {
-      _discovered_nodes.erase(*it);
-    }
-  }
-
-  void heartbeat(void) {
-    scheduler.scheduleEvent(ndn::time::seconds(1), std::bind(&Discovery::heartbeat, this));
-    send();
-    clean();
-  }
-
-private:
-  void onInterest(const ndn::Interest& interest) {
-    ndn::Name name = interest.getName();
-    DEBUG("Discovery::onInterest %s\n", name.toUri().c_str());
-    if(name[2] == ndn::name::Component("node")) {
-      DEBUG("NODE\n");
-      _discovered_nodes[name.getSubName(3).toUri()] = 1;
-    }
-    if(name[2] == ndn::name::Component("topic")) {
-      DEBUG("TOPIC\n");
-      _discovered_topics[name.getSubName(3).toUri()] = 1;
-    }
   }
 };
 
@@ -132,7 +56,7 @@ rmw_create_node(
   DEBUG("rmw_create_node" "\n");
   rmw_node_t *node = (rmw_node_t *)malloc(sizeof(rmw_node_t));
   node->implementation_identifier = rmw_get_implementation_identifier();
-  node->data = (void*)new Discovery(name);
+  node->data = (void*)new Node(name);
 
   const size_t namelen = strlen(name)+1;
   node->name = (const char*)malloc(namelen);
@@ -141,6 +65,8 @@ rmw_create_node(
   const size_t nslen = strlen(namespace_)+1;
   node->namespace_ = (const char*)malloc(nslen);
   memcpy((char*)node->namespace_, namespace_, nslen);
+
+  DiscoveryClient::instance();
 
   return node;
 }
@@ -158,8 +84,7 @@ rmw_get_node_names(
     const rmw_node_t * node,
     rcutils_string_array_t * node_names) {
   DEBUG("rmw_get_node_names" "\n");
-  auto discov = (Discovery *)node->data;
-  auto cpp_node_names = discov->getDiscoveredNames();
+  auto cpp_node_names = DiscoveryClient::instance().getDiscoveredNames();
 
   rcutils_allocator_t allocator = rcutils_get_default_allocator();
   rcutils_ret_t rcutils_ret =
@@ -191,8 +116,7 @@ rmw_get_topic_names_and_types(
     bool no_demangle,
     rmw_names_and_types_t * topic_names_and_types) {
   DEBUG("rmw_get_topic_names_and_types" "\n");
-  auto discov = (Discovery *)node->data;
-  std::map<std::string, std::set<std::string>> topics = discov->getDiscoveredTopics();
+  std::map<std::string, std::set<std::string>> topics = DiscoveryClient::instance().getDiscoveredTopics();
 
   // Copy data to results handle
   if (topics.size() > 0) {

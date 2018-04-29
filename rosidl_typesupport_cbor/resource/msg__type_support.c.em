@@ -198,6 +198,8 @@ for index, field in enumerate(spec.fields):
     if field.type.is_primitive_type() and not field.type.is_array:
         if field.type.type == "string":
             print("    ret += cbor_serialize_byte_stringl(&stream, msg->%s.data, msg->%s.size);" % (field.name, field.name));
+        elif field.type.type == "bool":
+            print("    ret += cbor_serialize_int(&stream, (int)msg->%s);" % field.name);
         elif field.type.type == "int32":
             print("    ret += cbor_serialize_int(&stream, msg->%s);" % field.name);
         elif field.type.type == "uint32":
@@ -231,6 +233,10 @@ for index, field in enumerate(spec.fields):
             print("    msg->%s.capacity = buffer_size;" % field.name);
             print("    msg->%s.data = realloc(msg->%s.data, sizeof(char)*buffer_size);" % (field.name, field.name));
             print("    ret += msg->%s.size = cbor_deserialize_byte_string(&stream, ret, msg->%s.data, msg->%s.capacity);" % (field.name, field.name, field.name));
+        elif field.type.type == "bool":
+            print("    int _%s;" % field.name);
+            print("    ret += cbor_deserialize_int(&stream, ret, &_%s);" % field.name);
+            print("    msg->%s = _%s;" % (field.name, field.name));
         elif field.type.type == "int32":
             print("    ret += cbor_deserialize_int(&stream, ret, &msg->%s);" % field.name);
         elif field.type.type == "uint32":

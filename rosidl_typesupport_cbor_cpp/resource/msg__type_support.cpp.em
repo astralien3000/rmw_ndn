@@ -190,6 +190,10 @@ for index, field in enumerate(spec.fields):
         if field.type.type == "string":
             print("    msg->%s.reserve(buffer_size);" % field.name);
             print("    ret += cbor_deserialize_byte_string(&stream, ret, (char*)msg->%s.data(), msg->%s.capacity());" % (field.name, field.name));
+        elif field.type.type == "bool":
+            print("    int _%s;" % field.name);
+            print("    ret += cbor_deserialize_int(&stream, ret, &_%s);" % field.name);
+            print("    msg->%s = _%s;" % (field.name, field.name));
         elif field.type.type == "int32":
             print("    ret += cbor_deserialize_int(&stream, ret, &msg->%s);" % field.name);
         elif field.type.type == "uint32":

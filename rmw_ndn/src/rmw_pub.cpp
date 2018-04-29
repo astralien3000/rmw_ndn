@@ -12,6 +12,9 @@
 
 #include "app.h"
 
+#include "discovery.hpp"
+#include "sync.hpp"
+
 //#define DEBUG(...) printf(__VA_ARGS__)
 #define DEBUG(...)
 
@@ -23,44 +26,62 @@ public:
   typedef size_t (*serialize_func_t)(const void* ros_message, char* buffer, size_t buffer_size);
 
 private:
-  ndn::Name _topic_name;
+  ndn::Name _name;
+  uint64_t _id;
   uint64_t _seq_num;
   uint64_t _req_seq_num;
   serialize_func_t _serialize;
   std::vector<ndn::Data> _queue;
+  DiscoveryHeartbeatEmiter _heartbeat;
+  SyncPublisher _sync;
 
 public:
   Publisher(const char* topic_name, serialize_func_t serialize)
-    : _topic_name(topic_name)
+    : _name(topic_name)
+    , _id(0)
     , _seq_num(0)
     , _req_seq_num(0)
     , _serialize(serialize)
+    , _heartbeat("publisher", topic_name, 0)
+    , _sync(topic_name, 0)
   {
-    face.setInterestFilter(_topic_name,
+    face.setInterestFilter(_name,
                            std::bind(&Publisher::onInterest, this, _2),
                            std::bind([this] {
-      DEBUG("Publisher::Publisher Prefix '%s' registered\n", _topic_name.toUri().c_str());
+      DEBUG("Publisher::Publisher Prefix '%s' registered\n", _name.toUri().c_str());
     }),
                            [] (const ndn::Name& prefix, const std::string& reason) {
       DEBUG("Publisher::Publisher Failed to register prefix '%s' (%s)\n", prefix.toUri().c_str(), reason.c_str());
     });
 
-    heartbeat();
+    requestSync();
   }
 
 private:
-  void heartbeat(void) {
-    scheduler.scheduleEvent(ndn::time::seconds(1), std::bind(&Publisher::heartbeat, this));
-    ndn::Interest interest;
-    ndn::Name interest_name = discovery_prefix;
-    interest_name.append("topic").append(_topic_name);
-    interest.setName(interest_name);
-    interest.setMustBeFresh(true);
-    interest.setInterestLifetime(ndn::time::seconds(0));
+  void requestSync() {
+    ndn::Name ndn_name;
+    ndn_name.append(_name).appendNumber(_id);
+    DEBUG("Publisher::request %s\n", ndn_name.toUri().c_str());
+    ndn::Interest interest(ndn_name);
+    interest.setMustBeFresh(false);
+    interest.setInterestLifetime(ndn::time::seconds(1));
     face.expressInterest(interest,
-                         std::bind([](const ndn::Data&) {}, _2),
-                         std::bind([](const ndn::Interest&) {}, _1),
-                         std::bind([](const ndn::Interest&) {}, _1));
+                         std::bind(&Publisher::onUsedId, this, _2),
+                         std::bind(&Publisher::onFreeId, this, _1),
+                         std::bind(&Publisher::onFreeId, this, _1));
+  }
+
+private:
+  void onUsedId(const ndn::Data& data) {
+    DEBUG("Publisher::onUsedId %s\n", data.getName().toUri().c_str());
+    _id = std::rand();
+    requestSync();
+  }
+
+  void onFreeId(const ndn::Interest& interest) {
+    DEBUG("Publisher::onFreeId %s\n", interest.getName().toUri().c_str());
+    _heartbeat.setName("publisher", _name.toUri(), _id);
+    _sync.setName(_name.toUri(), _id);
   }
 
 public:
@@ -72,16 +93,18 @@ public:
     data = (char*)realloc(data, size);
 
     ndn::Data data_msg;
-    ndn::Name name = _topic_name;
-    std::ostringstream os;
-    os << _seq_num;
-    name.append((const uint8_t*)os.str().c_str(), os.str().size());
+
+    ndn::Name name = _name;
+    name.appendNumber(_id);
+    name.appendNumber(_seq_num);
+
     data_msg.setName(name);
     data_msg.setContent((const uint8_t *)data, size);
 
     ndn::KeyChain key;
     key.sign(data_msg);
 
+    _sync.push(_seq_num, data_msg.getContent());
     _queue.push_back(data_msg);
 
     if(_req_seq_num >= _seq_num) {
@@ -105,18 +128,17 @@ private:
       return;
     }
 
-    if(!_topic_name.isPrefixOf(name)) {
+    if(!_name.isPrefixOf(name)) {
       DEBUG("Publisher::onInterest ERROR : unmatched prefix\n");
       return;
     }
 
-    if(name[_topic_name.size()] == ndn::name::Component("sync")) {
+    if(name[_name.size()] == ndn::name::Component("sync")) {
       DEBUG("SYNC\n");
-
+/*
       ndn::Data data;
-      std::ostringstream os;
-      os << _seq_num;
-      name.append((const uint8_t*)os.str().c_str(), os.str().size());
+
+      name.appendNumber(_seq_num);
 
       data.setName(name);
       data.setContent(_queue.back().getContent());
@@ -126,11 +148,12 @@ private:
       key.sign(data);
 
       face.put(data);
+      */
     }
     else {
       DEBUG("DATA\n");
-
-      ndn::name::Component req_seq_num_comp = name[_topic_name.size()];
+/*
+      ndn::name::Component req_seq_num_comp = name[_name.size()];
       std::string req_seq_num_str = req_seq_num_comp.toUri();
       uint64_t req_seq_num = std::stoull(req_seq_num_str);
 
@@ -147,6 +170,7 @@ private:
       }
 
       face.put(_queue[_queue.size()-diff_seq_num]);
+      */
     }
   }
 };

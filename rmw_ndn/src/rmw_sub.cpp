@@ -11,6 +11,8 @@
 
 #include "app.h"
 
+#include "discovery.hpp"
+
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/data.hpp>
@@ -18,8 +20,8 @@
 #include <iostream>
 #include <string>
 
-//#define DEBUG(...) printf(__VA_ARGS__)
-#define DEBUG(...)
+#define DEBUG(...) printf(__VA_ARGS__)
+//#define DEBUG(...)
 
 class Subscriber
 {
@@ -31,6 +33,7 @@ private:
   uint64_t _seq_num;
   deserialize_func_t _deserialize;
   std::vector<ndn::Data> _queue;
+  DiscoveryHeartbeatEmiter _heartbeat;
 
 public:
   explicit
@@ -38,34 +41,27 @@ public:
     : _topic_name(ndn::Name(topic_name))
     , _seq_num(0)
     , _deserialize(deserialize)
+    , _heartbeat("subscriber", topic_name)
   {
     DEBUG("Subscriber::topic_name = %s\n", topic_name.c_str());
     requestSync();
-    heartbeat();
-  }
-
-private:
-  void heartbeat(void) {
-    scheduler.scheduleEvent(ndn::time::seconds(1), std::bind(&Subscriber::heartbeat, this));
-    ndn::Interest interest;
-    ndn::Name interest_name = discovery_prefix;
-    interest_name.append("topic").append(_topic_name);
-    interest.setName(interest_name);
-    interest.setMustBeFresh(true);
-    interest.setInterestLifetime(ndn::time::seconds(0));
-    face.expressInterest(interest,
-                         std::bind([](const ndn::Data&) {}, _2),
-                         std::bind([](const ndn::Interest&) {}, _1),
-                         std::bind([](const ndn::Interest&) {}, _1));
   }
 
 private:
   void requestSync()
   {
-    ndn::Name name= ndn::Name(_topic_name).append("sync");
-    std::ostringstream os;
-    os << std::rand();
-    name.append((const uint8_t*)os.str().c_str(), os.str().size());
+    std::map<std::string, std::set<uint64_t>> pubs = DiscoveryClient::instance().getDiscoveredPublishers();
+    auto found = pubs.find(_topic_name.toUri());
+    if(found != pubs.end()) {
+      std::cerr << "SUCCESS" << std::endl;
+      for(auto it = found->second.begin() ; it != found->second.end() ; it++) {
+        std::cerr << *it << std::endl;
+      }
+    }
+    ndn::Name name= ndn::Name(_topic_name);
+    name.appendNumber(424238335);
+    name.append("sync");
+    name.appendNumber(std::rand());
     DEBUG("Subscriber::requestSync %s\n", name.toUri().c_str());
     ndn::Interest interest(name);
     interest.setMustBeFresh(true);
@@ -97,8 +93,11 @@ private:
     ndn::Name name = data.getName();
     DEBUG("Subscriber::onSyncData %s\n", name.toUri().c_str());
     ndn::name::Component seq_num_comp = *name.rbegin();
-    std::string req_seq_num_str = seq_num_comp.toUri();
-    _seq_num = std::stoull(req_seq_num_str);
+    uint64_t req_seq_num_ll = seq_num_comp.toNumber();
+    if(_seq_num <= req_seq_num_ll) {
+      _queue.push_back(data);
+      _seq_num = req_seq_num_ll+1;
+    }
     requestData();
   }
 
