@@ -14,6 +14,7 @@
 
 #include "discovery.hpp"
 #include "sync.hpp"
+#include "topic.hpp"
 
 //#define DEBUG(...) printf(__VA_ARGS__)
 #define DEBUG(...)
@@ -34,6 +35,7 @@ private:
   std::vector<ndn::Data> _queue;
   DiscoveryHeartbeatEmiter _heartbeat;
   SyncPublisher _sync;
+  TopicPublisher _topic;
 
 public:
   Publisher(const char* topic_name, serialize_func_t serialize)
@@ -43,24 +45,14 @@ public:
     , _req_seq_num(0)
     , _serialize(serialize)
     , _heartbeat("publisher", topic_name, 0)
-    , _sync(topic_name, 0)
   {
-    face.setInterestFilter(_name,
-                           std::bind(&Publisher::onInterest, this, _2),
-                           std::bind([this] {
-      DEBUG("Publisher::Publisher Prefix '%s' registered\n", _name.toUri().c_str());
-    }),
-                           [] (const ndn::Name& prefix, const std::string& reason) {
-      DEBUG("Publisher::Publisher Failed to register prefix '%s' (%s)\n", prefix.toUri().c_str(), reason.c_str());
-    });
-
     requestSync();
   }
 
 private:
   void requestSync() {
     ndn::Name ndn_name;
-    ndn_name.append(_name).appendNumber(_id);
+    ndn_name.append(_name).appendNumber(_id).append("sync");
     DEBUG("Publisher::request %s\n", ndn_name.toUri().c_str());
     ndn::Interest interest(ndn_name);
     interest.setMustBeFresh(false);
@@ -82,6 +74,7 @@ private:
     DEBUG("Publisher::onFreeId %s\n", interest.getName().toUri().c_str());
     _heartbeat.setName("publisher", _name.toUri(), _id);
     _sync.setName(_name.toUri(), _id);
+    _topic.setName(_name.toUri(), _id);
   }
 
 public:
@@ -96,6 +89,7 @@ public:
 
     ndn::Name name = _name;
     name.appendNumber(_id);
+    name.append("data");
     name.appendNumber(_seq_num);
 
     data_msg.setName(name);
@@ -105,73 +99,8 @@ public:
     key.sign(data_msg);
 
     _sync.push(_seq_num, data_msg.getContent());
-    _queue.push_back(data_msg);
-
-    if(_req_seq_num >= _seq_num) {
-      face.put(data_msg);
-    }
-
+    _topic.push(data_msg);
     _seq_num++;
-
-    if(_queue.size() > WINDOW) {
-      _queue.erase(_queue.begin());
-    }
-  }
-
-private:
-  void onInterest(const ndn::Interest& interest) {
-    ndn::Name name = interest.getName();
-    DEBUG("Publisher::onInterest %s\n", name.toUri().c_str());
-
-    if(_queue.empty()) {
-      DEBUG("Publisher::onInterest SKIP : no data\n");
-      return;
-    }
-
-    if(!_name.isPrefixOf(name)) {
-      DEBUG("Publisher::onInterest ERROR : unmatched prefix\n");
-      return;
-    }
-
-    if(name[_name.size()] == ndn::name::Component("sync")) {
-      DEBUG("SYNC\n");
-/*
-      ndn::Data data;
-
-      name.appendNumber(_seq_num);
-
-      data.setName(name);
-      data.setContent(_queue.back().getContent());
-      data.setFreshnessPeriod(ndn::time::seconds(0));
-
-      ndn::KeyChain key;
-      key.sign(data);
-
-      face.put(data);
-      */
-    }
-    else {
-      DEBUG("DATA\n");
-/*
-      ndn::name::Component req_seq_num_comp = name[_name.size()];
-      std::string req_seq_num_str = req_seq_num_comp.toUri();
-      uint64_t req_seq_num = std::stoull(req_seq_num_str);
-
-      if(req_seq_num >= _seq_num) {
-        DEBUG("Publisher::onInterest SKIP : data %i not produced (%i)\n", (int)req_seq_num, (int)_seq_num);
-        _req_seq_num = req_seq_num;
-        return;
-      }
-
-      const uint64_t diff_seq_num = _seq_num - req_seq_num;
-      if(diff_seq_num > _queue.size()) {
-        DEBUG("Publisher::onInterest SKIP : data %i outdated (%i)\n", (int)req_seq_num, (int)_seq_num);
-        return;
-      }
-
-      face.put(_queue[_queue.size()-diff_seq_num]);
-      */
-    }
   }
 };
 

@@ -9,8 +9,8 @@
 
 #include "app.h"
 
-#define DEBUG(...) printf(__VA_ARGS__)
-//#define DEBUG(...)
+//#define DEBUG(...) printf(__VA_ARGS__)
+#define DEBUG(...)
 
 class SyncPublisher
 {
@@ -21,16 +21,8 @@ private:
   const ndn::RegisteredPrefixId* _reg_prefix_id;
 
 public:
-  SyncPublisher(std::string name, uint64_t id)
-    : _seq_num(0)
-  {
-    _name.append(name);
-    _name.appendNumber(id);
-    _name.append("sync");
-    _reg_prefix_id = face.setInterestFilter(_name,
-                           std::bind(&SyncPublisher::onInterest, this, _2),
-                           std::bind([this] {}),
-                           std::bind([this] {}));
+  SyncPublisher(void)
+    : _seq_num(0), _reg_prefix_id(0) {
   }
 
 public:
@@ -40,11 +32,11 @@ public:
     _name.append(name);
     _name.appendNumber(id);
     _name.append("sync");
-    DEBUG("new id : %i\n", (int)id);
     _reg_prefix_id = face.setInterestFilter(_name,
-                           std::bind(&SyncPublisher::onInterest, this, _2),
-                           std::bind([] {}),
-                           std::bind([] {}));
+                                            std::bind(&SyncPublisher::onInterest, this, _2),
+                                            std::bind([] {}),
+                                            std::bind([] {})
+                                            );
   }
 
 public:
@@ -84,70 +76,36 @@ private:
   }
 };
 
-class SyncSubscriber
-{
-public:
-  typedef void (*Callback)(void);
+using SyncCallback = std::function<void(uint64_t, uint64_t, ndn::Data)>;
+using SyncErrorCallback = std::function<void(uint64_t)>;
 
-private:
-  ndn::Name _name;
-  uint64_t _seq_num;
-  Callback _cb;
+static inline void requestSync(const std::string topic_name, uint64_t id, SyncCallback sync_cb, SyncErrorCallback err_cb) {
+  ndn::Name name;
+  name.append(topic_name);
+  name.appendNumber(id);
+  name.append("sync");
+  name.appendNumber(std::rand());
 
-public:
-  explicit
-  SyncSubscriber(const std::string topic_name, uint64_t id, Callback cb)
-    : _seq_num(0)
-    , _cb(cb)
-  {
-    _name.append(topic_name);
-    _name.appendNumber(id);
-    _name.append("sync");
-    DEBUG("SyncSubscriber::_name = %s\n", _name.toUri().c_str());
-    requestSync();
-  }
+  DEBUG("requestSync %s\n", name.toUri().c_str());
 
-private:
-  void requestSync()
-  {
-    ndn::Name name= ndn::Name(_name);
-    name.appendNumber(std::rand());
-    DEBUG("SyncSubscriber::requestSync %s\n", name.toUri().c_str());
-    ndn::Interest interest(name);
-    interest.setMustBeFresh(true);
-    interest.setInterestLifetime(ndn::time::seconds(10));
-    face.expressInterest(interest,
-                         std::bind(&SyncSubscriber::onSyncData, this, _2),
-                         std::bind(&SyncSubscriber::onNack, this, _1),
-                         std::bind(&SyncSubscriber::onTimeout, this, _1));
-  }
+  ndn::Interest interest(name);
+  interest.setMustBeFresh(true);
+  interest.setInterestLifetime(ndn::time::seconds(1));
 
-  void onSyncData(const ndn::Data& data)
-  {
-    /*
-    ndn::Name name = data.getName();
-    DEBUG("SyncSubscriber::onSyncData %s\n", name.toUri().c_str());
-    ndn::name::Component seq_num_comp = *name.rbegin();
-    std::string req_seq_num_str = seq_num_comp.toUri();
-    uint64_t req_seq_num_ll = std::stoull(req_seq_num_str);
-    if(_seq_num <= req_seq_num_ll) {
-      _queue.push_back(data);
-      _seq_num = req_seq_num_ll+1;
-    }
-    requestData();
-    */
-  }
+  auto on_data = [sync_cb, id](const ndn::Data& data) {
+    uint64_t seq_num = data.getName().rbegin()->toNumber();
+    sync_cb(id, seq_num, data);
+  };
 
-  void onNack(const ndn::Interest& interest) {
-    DEBUG("SyncSubscriber::onNack %s\n", interest.getName().toUri().c_str());
-    scheduler.scheduleEvent(ndn::time::seconds(1), [this] { requestSync(); });
-  }
+  auto on_error = [err_cb, id]() {
+    err_cb(id);
+  };
 
-  void onTimeout(const ndn::Interest& interest) {
-    DEBUG("SyncSubscriber::onTimeout %s\n", interest.getName().toUri().c_str());
-    requestSync();
-  }
-};
+  face.expressInterest(interest,
+                       std::bind(on_data, _2),
+                       std::bind([]{}),
+                       std::bind(on_error));
+}
 
 #undef DEBUG
 

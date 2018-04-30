@@ -12,6 +12,8 @@
 #include "app.h"
 
 #include "discovery.hpp"
+#include "sync.hpp"
+#include "topic.hpp"
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/interest.hpp>
@@ -20,8 +22,8 @@
 #include <iostream>
 #include <string>
 
-#define DEBUG(...) printf(__VA_ARGS__)
-//#define DEBUG(...)
+//#define DEBUG(...) printf(__VA_ARGS__)
+#define DEBUG(...)
 
 class Subscriber
 {
@@ -30,7 +32,6 @@ public:
 
 private:
   ndn::Name _topic_name;
-  uint64_t _seq_num;
   deserialize_func_t _deserialize;
   std::vector<ndn::Data> _queue;
   DiscoveryHeartbeatEmiter _heartbeat;
@@ -39,85 +40,43 @@ public:
   explicit
   Subscriber(const std::string& topic_name, deserialize_func_t deserialize)
     : _topic_name(ndn::Name(topic_name))
-    , _seq_num(0)
     , _deserialize(deserialize)
     , _heartbeat("subscriber", topic_name)
   {
     DEBUG("Subscriber::topic_name = %s\n", topic_name.c_str());
-    requestSync();
+    auto pubs = DiscoveryClient::instance().getDiscoveredPublishers();
+    for(auto it = pubs[_topic_name.toUri()].begin() ; it != pubs[_topic_name.toUri()].end() ; it++) {
+      reqSync(*it);
+    }
+    DiscoveryClient::instance()._pubs_cb[_topic_name.toUri()].push_back(std::bind(&Subscriber::reqSync, this, _1));
   }
 
 private:
-  void requestSync()
-  {
-    std::map<std::string, std::set<uint64_t>> pubs = DiscoveryClient::instance().getDiscoveredPublishers();
-    auto found = pubs.find(_topic_name.toUri());
-    if(found != pubs.end()) {
-      std::cerr << "SUCCESS" << std::endl;
-      for(auto it = found->second.begin() ; it != found->second.end() ; it++) {
-        std::cerr << *it << std::endl;
-      }
-    }
-    ndn::Name name= ndn::Name(_topic_name);
-    name.appendNumber(424238335);
-    name.append("sync");
-    name.appendNumber(std::rand());
-    DEBUG("Subscriber::requestSync %s\n", name.toUri().c_str());
-    ndn::Interest interest(name);
-    interest.setMustBeFresh(true);
-    interest.setInterestLifetime(ndn::time::seconds(10));
-    face.expressInterest(interest,
-                         std::bind(&Subscriber::onSyncData, this, _2),
-                         std::bind(&Subscriber::onNack, this, _1),
-                         std::bind(&Subscriber::onTimeout, this, _1));
+  void reqSync(uint64_t id) {
+    requestSync(_topic_name.toUri(), id,
+                std::bind(&Subscriber::onData, this, _1, _2, _3),
+                std::bind(&Subscriber::onError, this, _1)
+                );
   }
 
-  void requestData()
-  {
-    ndn::Name name= ndn::Name(_topic_name);
-    std::ostringstream os;
-    os << _seq_num;
-    name.append((const uint8_t*)os.str().c_str(), os.str().size());
-    DEBUG("Subscriber::requestData %s\n", name.toUri().c_str());
-    ndn::Interest interest(name);
-    interest.setMustBeFresh(false);
-    interest.setInterestLifetime(ndn::time::seconds(10));
-    face.expressInterest(interest,
-                         std::bind(&Subscriber::onData, this, _2),
-                         std::bind(&Subscriber::onNack, this, _1),
-                         std::bind(&Subscriber::onTimeout, this, _1));
+  void reqData(uint64_t id, uint64_t seq_num) {
+    requestData(_topic_name.toUri(), id, seq_num,
+                std::bind(&Subscriber::onData, this, _1, _2, _3),
+                std::bind(&Subscriber::onError, this, _1)
+                );
   }
 
-  void onSyncData(const ndn::Data& data)
-  {
-    ndn::Name name = data.getName();
-    DEBUG("Subscriber::onSyncData %s\n", name.toUri().c_str());
-    ndn::name::Component seq_num_comp = *name.rbegin();
-    uint64_t req_seq_num_ll = seq_num_comp.toNumber();
-    if(_seq_num <= req_seq_num_ll) {
-      _queue.push_back(data);
-      _seq_num = req_seq_num_ll+1;
-    }
-    requestData();
+private:
+  void onError(uint64_t id) {
+    DEBUG("Subscriber::onError %s %i\n", _topic_name.toUri().c_str(), (int)id);
+    reqSync(id);
   }
 
-  void onData(const ndn::Data& data)
-  {
+  void onData(uint64_t id, uint64_t seq_num, const ndn::Data& data) {
     ndn::Name name = data.getName();
     DEBUG("Subscriber::onData %s\n", name.toUri().c_str());
     _queue.push_back(data);
-    _seq_num++;
-    requestData();
-  }
-
-  void onNack(const ndn::Interest& interest) {
-    DEBUG("Subscriber::onNack %s\n", interest.getName().toUri().c_str());
-    scheduler.scheduleEvent(ndn::time::seconds(1), [this] { requestSync(); });
-  }
-
-  void onTimeout(const ndn::Interest& interest) {
-    DEBUG("Subscriber::onTimeout %s\n", interest.getName().toUri().c_str());
-    requestSync();
+    reqData(id, seq_num+1);
   }
 
 public:

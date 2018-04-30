@@ -71,6 +71,9 @@ private:
   std::map<std::string, std::map<uint64_t, int>> _discovered_publishers;
   std::map<std::string, int> _discovered_subscribers;
 
+public:
+  std::map<std::string, std::vector<std::function<void(uint64_t)>>> _pubs_cb;
+
 private:
   DiscoveryClient(void) {
     face.setInterestFilter(discovery_prefix,
@@ -129,6 +132,11 @@ private:
       ndn::Name topic_name = pname.getPrefix(pname.size()-1);
       uint64_t id = pname.rbegin()->toNumber();
       DEBUG("PUBLISHER %s %i\n", topic_name.toUri().c_str(), (int)id);
+      if(_discovered_publishers[topic_name.toUri()][id] == 0) {
+        for(auto it = _pubs_cb[topic_name.toUri()].begin() ; it != _pubs_cb[topic_name.toUri()].end() ; it++) {
+          (*it)(id);
+        }
+      }
       _discovered_publishers[topic_name.toUri()][id] = 1;
     }
     if(name[2] == ndn::name::Component("subscriber")) {
