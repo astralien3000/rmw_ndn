@@ -141,8 +141,8 @@ repositories:
     version: 0.4.0
   ros2/rmw_implementation:
     type: git
-    url: https://github.com/ros2/rmw_implementation.git
-    version: 0.4.0
+    url: https://github.com/astralien3000/rmw_implementation.git
+    version: rmw_ndn
 #  ros2/rmw_opensplice:
 #    type: git
 #    url: https://github.com/ros2/rmw_opensplice.git
@@ -169,8 +169,8 @@ repositories:
     version: 0.4.0
   ros2/rosidl_typesupport:
     type: git
-    url: https://github.com/ros2/rosidl_typesupport.git
-    version: 0.4.0
+    url: https://github.com/astralien3000/rosidl_typesupport.git
+    version: rmw_ndn
 #  ros2/rviz:
 #    type: git
 #    url: https://github.com/ros2/rviz.git
