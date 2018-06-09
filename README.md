@@ -24,6 +24,12 @@ sudo ./waf install
 
 ## Install ROS2
 
+### Prerequisites
+
+[See ROS2 documentation](https://github.com/ros2/ros2/wiki/Linux-Development-Setup)
+
+### Build and install
+
 ```bash
 mkdir -p ros2_ndn_ws/src
 cd ros2_ndn_ws
