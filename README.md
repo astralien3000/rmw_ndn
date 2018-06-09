@@ -4,15 +4,15 @@ Implementation of the ROS Middleware (rmw) Interface using NDN
 
 # Install
 
-## Install ndn-cxx
+## Install ndn-cxx and NFD
 
 ### Prerequisites
 
 ```bash
-sudo apt install pkg-config libsqlite3-dev libssl-dev libboost-all-dev
+sudo apt install pkg-config libsqlite3-dev libssl-dev libboost-all-dev libpcap-dev
 ```
 
-### Build and install
+### Build and install ndn-cxx
 
 ```bash
 git clone https://github.com/named-data/ndn-cxx.git -b ndn-cxx-0.6.1
@@ -20,6 +20,17 @@ cd ndn-cxx
 ./waf configure
 ./waf
 sudo ./waf install
+```
+
+### Build and install NFD
+
+```bash
+git clone https://github.com/named-data/NFD.git -b NFD-0.6.1 --recursive
+cd NFD
+./waf configure
+./waf
+sudo ./waf install
+sudo cp /usr/local/etc/ndn/nfd.conf{.sample,}
 ```
 
 ## Install ROS2
