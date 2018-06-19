@@ -96,7 +96,9 @@ public:
     data_msg.setContent((const uint8_t *)data, size);
 
     ndn::KeyChain key;
+    std::cout << "RMW_PUB_DATA_SIGN_BEFORE;" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() << std::endl;
     key.sign(data_msg);
+    std::cout << "RMW_PUB_DATA_SIGN_AFTER;" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() << std::endl;
 
     _sync.push(_seq_num, data_msg.getContent());
     _topic.push(data_msg);

@@ -9,6 +9,9 @@
 
 #include "app.h"
 
+#include <iostream>
+#include <chrono>
+
 //#define DEBUG(...) printf(__VA_ARGS__)
 #define DEBUG(...)
 
@@ -49,6 +52,7 @@ public:
     DEBUG("TopicPublisher::push seq %i\n", (int)_seq_num);
     for(auto it = _req_seq_num.begin() ; it != _req_seq_num.end() ; it++) {
       if(*it == _seq_num) {
+        std::cout << "RMW_PUBLISH_SEND;" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() << std::endl;
         face.put(data);
         _req_seq_num.erase(it);
         break;
@@ -65,6 +69,7 @@ public:
 
 private:
   void onInterest(const ndn::Interest& interest) {
+    std::cout << "RMW_TOPIC_ON_INTEREST;" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() << std::endl;
     ndn::Name name = interest.getName();
     DEBUG("TopicPublisher::onInterest %s\n", name.toUri().c_str());
 
@@ -94,6 +99,7 @@ private:
     }
 
     DEBUG("TopicPublisher::onInterest PUBLISH : data %i %s\n", (int)req_seq_num, _queue[_queue.size()-diff_seq_num].getName().toUri().c_str());
+    std::cout << "RMW_PUBLISH_SEND;" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() << std::endl;
     face.put(_queue[_queue.size()-diff_seq_num]);
   }
 };
@@ -115,6 +121,7 @@ static inline void requestData(const std::string& topic_name, uint64_t id, uint6
   interest.setInterestLifetime(ndn::time::seconds(1));
 
   auto on_data = [data_cb, id](const ndn::Data& data) {
+    std::cout << "RMW_SUB_RECV;" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() << std::endl;
     uint64_t seq_num = data.getName().rbegin()->toNumber();
     data_cb(id, seq_num, data);
   };
