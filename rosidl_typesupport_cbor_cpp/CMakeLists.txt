@@ -10,6 +10,7 @@ endif()
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
+add_definitions(-DMODULE_CBOR_FLOAT)
 
 find_package(ament_cmake_python REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
@@ -21,6 +22,7 @@ ament_export_dependencies(rosidl_generator_cpp)
 ament_export_dependencies(rosidl_typesupport_interface)
 
 ament_export_include_directories(include)
+ament_export_definitions(-DMODULE_CBOR_FLOAT)
 
 ament_python_install_package(${PROJECT_NAME})
 

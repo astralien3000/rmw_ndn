@@ -38,9 +38,9 @@ private:
   TopicPublisher _topic;
 
 public:
-  Publisher(const char* topic_name, serialize_func_t serialize)
+  Publisher(const char* topic_name, serialize_func_t serialize, uint64_t id)
     : _name(topic_name)
-    , _id(0)
+    , _id(id)
     , _seq_num(0)
     , _req_seq_num(0)
     , _serialize(serialize)
@@ -133,7 +133,8 @@ rmw_create_publisher(
   }
   rosidl_typesupport_cbor__MessageMembers* tsdata = (rosidl_typesupport_cbor__MessageMembers*)ts->data;
 
-  Publisher* pub = new Publisher(topic_name, tsdata->serialize_);
+  std::srand(std::time(nullptr));
+  Publisher* pub = new Publisher(topic_name, tsdata->serialize_, std::rand());
   ret->data = (void*)pub;
 
   return ret;

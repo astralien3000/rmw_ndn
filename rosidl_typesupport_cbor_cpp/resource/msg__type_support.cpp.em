@@ -166,6 +166,8 @@ for index, field in enumerate(spec.fields):
             print("    ret += cbor_serialize_int64_t(&stream, msg->%s);" % field.name);
         elif field.type.type == "uint64":
             print("    ret += cbor_serialize_uint64_t(&stream, msg->%s);" % field.name);
+        elif field.type.type == "float64":
+            print("    ret += cbor_serialize_double(&stream, msg->%s);" % field.name);
         else:
             print("    (void)msg;// msg->%s : (%s) NOT SUPPORTED !" % (field.name, field.type.type));
     else:
@@ -202,6 +204,8 @@ for index, field in enumerate(spec.fields):
             print("    ret += cbor_deserialize_int64_t(&stream, ret, &msg->%s);" % field.name);
         elif field.type.type == "uint64":
             print("    ret += cbor_deserialize_uint64_t(&stream, ret, &msg->%s);" % field.name);
+        elif field.type.type == "float64":
+            print("    ret += cbor_deserialize_double(&stream, ret, &msg->%s);" % field.name);
         else:
             print("    (void)msg;// msg->%s : (%s) NOT SUPPORTED !" % (field.name, field.type.type));
     else:
