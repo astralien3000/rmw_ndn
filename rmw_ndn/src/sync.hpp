@@ -27,16 +27,20 @@ public:
 
 public:
   void setName(std::string name, uint64_t id) {
+    //face_mutex.lock();
     face.unsetInterestFilter(_reg_prefix_id);
+    //face_mutex.unlock();
     _name.clear();
     _name.append(name);
     _name.appendNumber(id);
     _name.append("sync");
+    //face_mutex.lock();
     _reg_prefix_id = face.setInterestFilter(_name,
                                             std::bind(&SyncPublisher::onInterest, this, _2),
                                             std::bind([] {}),
                                             std::bind([] {})
                                             );
+    //face_mutex.unlock();
   }
 
 public:
@@ -69,10 +73,12 @@ private:
     data.setContent(_content);
     data.setFreshnessPeriod(ndn::time::seconds(0));
 
-    ndn::KeyChain key;
-    key.sign(data);
+    //ndn::KeyChain key;
+    //key.sign(data);
 
+    //face_mutex.lock();
     face.put(data);
+    //face_mutex.unlock();
   }
 };
 
@@ -101,10 +107,12 @@ static inline void requestSync(const std::string topic_name, uint64_t id, SyncCa
     err_cb(id);
   };
 
+  //face_mutex.lock();
   face.expressInterest(interest,
                        std::bind(on_data, _2),
                        std::bind([]{}),
                        std::bind(on_error));
+  //face_mutex.unlock();
 }
 
 #undef DEBUG

@@ -41,6 +41,7 @@ rmw_ret_t
 rmw_init(void)
 {
   DEBUG("rmw_init" "\n");
+
   return RMW_RET_OK;
 }
 

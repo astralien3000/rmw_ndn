@@ -49,7 +49,7 @@ public:
 
 private:
   void heartbeat(void) {
-    _evt = scheduler.scheduleEvent(ndn::time::seconds(1), std::bind(&DiscoveryHeartbeatEmiter::heartbeat, this));
+    _evt = scheduler.scheduleEvent(ndn::time::milliseconds(100), std::bind(&DiscoveryHeartbeatEmiter::heartbeat, this));
     ndn::Interest interest;
     ndn::Name interest_name = discovery_prefix;
     interest_name.append(_name);
@@ -57,10 +57,12 @@ private:
     interest.setName(interest_name);
     interest.setMustBeFresh(true);
     interest.setInterestLifetime(ndn::time::seconds(0));
+    //face_mutex.lock();
     face.expressInterest(interest,
                          std::bind([](const ndn::Data&) {}, _2),
                          std::bind([](const ndn::Interest&) {}, _1),
                          std::bind([](const ndn::Interest&) {}, _1));
+    //face_mutex.unlock();
   }
 };
 
@@ -76,10 +78,12 @@ public:
 
 private:
   DiscoveryClient(void) {
+    face_mutex.lock();
     face.setInterestFilter(discovery_prefix,
                            std::bind(&DiscoveryClient::onInterest, this, _2),
                            std::bind([] {}),
                            std::bind([] {}));
+    face_mutex.unlock();
   }
 
 public:

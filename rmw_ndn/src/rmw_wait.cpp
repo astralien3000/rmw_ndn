@@ -11,12 +11,15 @@ using namespace boost::chrono;
 
 #include <iostream>
 #include <chrono>
+#include <thread>
 
 //#define DEBUG(...) printf(__VA_ARGS__)
 #define DEBUG(...)
 
 class Subscriber;
 bool can_take(Subscriber* sub);
+
+std::thread process_thread;
 
 rmw_ret_t
 rmw_wait(
@@ -35,6 +38,20 @@ rmw_wait(
   (void) wait_timeout;
   DEBUG("rmw_wait" "\n");
 
+  if(process_thread.get_id() == std::thread::id()) {
+    process_thread = std::thread([]() {
+      DEBUG("Start process_thread\n");
+      while(1) {
+        DEBUG("lock\n");
+        face_mutex.lock();
+        face.processEvents(ndn::time::milliseconds(100));
+        DEBUG("unlock\n");
+        face_mutex.unlock();
+      }
+      DEBUG("End process_thread\n");
+    });
+  }
+
   const auto begin = system_clock::now();
   
   ndn::time::milliseconds timeout = ndn::time::milliseconds(0);
@@ -46,12 +63,18 @@ rmw_wait(
   const auto end = begin + timeout;
 
   do {
+    /*
     if(timeout == ndn::time::milliseconds(0)) {
+      face_mutex.lock();
       face.processEvents(ndn::time::milliseconds(-1));
+      face_mutex.unlock();
     }
     else {
+      face_mutex.lock();
       face.processEvents(timeout);
+      face_mutex.unlock();
     }
+    */
 
     bool stop = false;
 

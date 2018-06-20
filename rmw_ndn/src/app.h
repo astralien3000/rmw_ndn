@@ -11,12 +11,15 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <mutex>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 extern ndn::Face face;
 extern ndn::Scheduler scheduler;
+extern std::mutex face_mutex;
 
 extern const ndn::Name discovery_prefix;
 

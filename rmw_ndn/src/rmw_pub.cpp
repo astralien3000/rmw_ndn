@@ -57,10 +57,12 @@ private:
     ndn::Interest interest(ndn_name);
     interest.setMustBeFresh(false);
     interest.setInterestLifetime(ndn::time::seconds(1));
+    //face_mutex.lock();
     face.expressInterest(interest,
                          std::bind(&Publisher::onUsedId, this, _2),
                          std::bind(&Publisher::onFreeId, this, _1),
                          std::bind(&Publisher::onFreeId, this, _1));
+    //face_mutex.unlock();
   }
 
 private:
@@ -79,10 +81,10 @@ private:
 
 public:
   void push(const void* msg) {
-    char* data = (char*)malloc(512);
+    char* data = (char*)malloc(2048);
     size_t size = 0;
 
-    size = _serialize(msg, data, 512);
+    size = _serialize(msg, data, 2048);
     data = (char*)realloc(data, size);
 
     ndn::Data data_msg;
@@ -95,10 +97,8 @@ public:
     data_msg.setName(name);
     data_msg.setContent((const uint8_t *)data, size);
 
-    ndn::KeyChain key;
-    std::cout << "RMW_PUB_DATA_SIGN_BEFORE;" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() << std::endl;
-    key.sign(data_msg);
-    std::cout << "RMW_PUB_DATA_SIGN_AFTER;" << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() << std::endl;
+    //ndn::KeyChain key;
+    //key.sign(data_msg);
 
     _sync.push(_seq_num, data_msg.getContent());
     _topic.push(data_msg);

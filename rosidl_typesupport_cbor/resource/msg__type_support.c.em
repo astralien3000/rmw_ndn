@@ -213,6 +213,34 @@ for index, field in enumerate(spec.fields):
         else:
             print("    (void)msg;// msg->%s : (%s) NOT SUPPORTED !" % (field.name, field.type.type));
     else:
+        if field.type.is_array:
+            if field.type.array_size:
+                print("    ret += cbor_serialize_array(&stream, %s);" % field.type.array_size);
+                print("    for(size_t i = 0 ; i < %s ; i++) {" % field.type.array_size);
+                if field.type.type == "string":
+                    print("        (void)msg;// msg->%s : (%s) NOT SUPPORTED !" % (field.name, field.type.type));
+                elif field.type.type == "bool":
+                    print("        ret += cbor_serialize_int(&stream, (int)msg->%s[i]);" % field.name);
+                elif field.type.type == "byte":
+                    print("        ret += cbor_serialize_int(&stream, (int)msg->%s[i]);" % field.name);
+                elif field.type.type == "int32":
+                    print("        ret += cbor_serialize_int(&stream, msg->%s[i]);" % field.name);
+                elif field.type.type == "uint32":
+                    print("        ret += cbor_serialize_int(&stream, (int)msg->%s[i]);" % field.name);
+                elif field.type.type == "int64":
+                    print("        ret += cbor_serialize_int64_t(&stream, msg->%s[i]);" % field.name);
+                elif field.type.type == "uint64":
+                    print("        ret += cbor_serialize_uint64_t(&stream, msg->%s[i]);" % field.name);
+                elif field.type.type == "float64":
+                    print("        ret += cbor_serialize_double(&stream, msg->%s[i]);" % field.name);
+                else:
+                    print("        (void)msg;// msg->%s : (%s) NOT SUPPORTED !" % (field.name, field.type.type));
+                print("    }");
+            else:
+                print("    ret += cbor_serialize_array_indefinite(&stream);");
+                print("    //TODO");
+                print("    ret += cbor_write_break(&stream);");
+        else:
             print("    (void)msg;// msg->%s : NOT SUPPORTED !" % field.name);
 print("    return ret;");
 }@
@@ -252,6 +280,39 @@ for index, field in enumerate(spec.fields):
         else:
             print("    (void)msg;// msg->%s : (%s) NOT SUPPORTED !" % (field.name, field.type.type));
     else:
+        if field.type.is_array:
+            if field.type.array_size:
+                print("    size_t %s_len = 0;" % field.name);
+                print("    ret += cbor_deserialize_array(&stream, ret, &%s_len);" % field.name);
+                print("    for(size_t i = 0 ; i < %s_len ; i++) {" % field.name);
+                if field.type.type == "string":
+                    print("        (void)msg;// msg->%s : (%s) NOT SUPPORTED !" % (field.name, field.type.type));
+                elif field.type.type == "bool":
+                    print("        int _%s;" % field.name);
+                    print("        ret += cbor_deserialize_int(&stream, ret, &_%s);" % field.name);
+                    print("        msg->%s[i] = _%s;" % (field.name, field.name));
+                elif field.type.type == "byte":
+                    print("        int _%s;" % field.name);
+                    print("        ret += cbor_deserialize_int(&stream, ret, &_%s);" % field.name);
+                    print("        msg->%s[i] = _%s;" % (field.name, field.name));
+                elif field.type.type == "int32":
+                    print("        ret += cbor_deserialize_int(&stream, ret, &msg->%s[i]);" % field.name);
+                elif field.type.type == "uint32":
+                    print("        ret += cbor_deserialize_int(&stream, ret, (int*)&msg->%s[i]);" % field.name);
+                elif field.type.type == "int64":
+                    print("        ret += cbor_deserialize_int64_t(&stream, ret, &msg->%s[i]);" % field.name);
+                elif field.type.type == "uint64":
+                    print("        ret += cbor_deserialize_uint64_t(&stream, ret, &msg->%s[i]);" % field.name);
+                elif field.type.type == "float64":
+                    print("        ret += cbor_deserialize_double(&stream, ret, &msg->%s[i]);" % field.name);
+                else:
+                    print("    (void)msg;// msg->%s : (%s) NOT SUPPORTED !" % (field.name, field.type.type));
+                print("    }");
+            else:
+                print("    ret += cbor_serialize_array_indefinite(&stream);");
+                print("    //TODO");
+                print("    ret += cbor_write_break(&stream);");
+        else:
             print("    (void)msg;// msg->%s : NOT SUPPORTED !" % field.name);
 print("    return ret;");
 }@
